@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+{% include 'flashed.html' %}
+<div>
+{% if top_activity is defined %}
+    <embed type="image/svg+xml" src="{{ top_activity }}" />
+{% endif %}
+</div>
+<div>
+{% if top_sql is defined %}
+<span>
+    <embed type="image/svg+xml" src="{{ top_sql }}" />
+</span>
+{% endif %}
+{% if top_objects is defined %}
+<span>
+    <embed type="image/svg+xml" src="{{ top_objects }}" />
+</span>
+{% endif %}
+{% if top_waits is defined %}
+<span>
+    <embed type="image/svg+xml" src="{{ top_waits }}" />
+</span>
+{% endif %}
+</div>
+{% endblock %}

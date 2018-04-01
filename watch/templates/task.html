@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+<form method="get">
+    {% for k, v in g.parameters.items() %}
+    <label>{% if loop.index == 1 %}Required{% endif %}
+        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
+    </label>
+    {% endfor %}
+    <label>Period
+        <input type="text" class="sql-text" name="period" size="6" value="{% if request.args.get('period') %}{{ request.args['period'] }}{% else %}{{ g.period }}{% endif %}">
+    </label>
+    <label>Notify
+        <select type="text" class="sql-text" name="notify" size="1">
+            {% for k in g.notification_list.keys() %}
+            <option value="{{ k }}"{% if request.args.get('notify', '') == k|string %} selected{% endif %}>{{ g.notification_list[k] }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <input type="hidden" name="do">
+    <input type="submit" value="Add">
+</form>
+{% if uuid is defined %}
+<div>Task {{ uuid }} created. See the <a href="/get_app?task_id={{ uuid }}">Task list.</a></div>
+{% endif %}
+{% include 'flashed.html' %}
+{% endblock %}

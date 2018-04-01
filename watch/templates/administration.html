@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block content %}
+{% for item in info %}
+<div>{{ item }}</div>
+{% endfor %}
+{% if active_connections %}
+<div>Active connections:</div>
+<table>
+    <tr><th>id</th><th>Acquired</th><th>User</th><th>Target</th><th>Statement</th><th>Action</th></tr>
+    {% for item in active_connections.keys() -%}
+    <tr>
+        <td>{{ item }}</td>
+        <td>{{ active_connections[item][1].strftime(config['DATETIME_FORMAT']) }}</td>
+        <td>{{ active_connections[item][2]}}</td>
+        <td>{{ active_connections[item][3]}}</td>
+        <td>{{ active_connections[item][4]}}</td>
+        <td>{% if active_connections[item][5] %}{{active_connections[item][5] }}{% else %}<a href="/cancel_sql?id={{ item }}">Cancel</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+<br>
+{% if task_pool %}
+<div>Active tasks:</div>
+{% include 'flashed.html' %}
+<table>
+    <tr><th>id</th><th>Name</th><th>Created</th><th>User</th><th>Target</th><th>Last call</th><th>Period</th><th>Execs</th><th>State</th><th>Parameters</th><th>Action</th></tr>
+    {% for item in task_pool.keys() -%}
+    <tr>
+        <td class="{% if task_id == item %}selected{% endif %}">{{ item }}</td>
+        <td>{{ task_pool[item][1] }}</td>
+        <td>{{ task_pool[item][2].strftime(config['DATETIME_FORMAT']) }}</td>
+        <td>{{ task_pool[item][3] }}</td>
+        <td>{{ task_pool[item][4] }}</td>
+        <td>{% if task_pool[item][5] is not none %}{{ task_pool[item][5].strftime(config['DATETIME_FORMAT']) }}{% endif %}</td>
+        <td>{{ task_pool[item][9] }}</td>
+        <td align="right">{{ '{:,}'.format(task_pool[item][6]).replace(',', ' ') }}</td>
+        <td>{{ task_pool[item][7] }}</td>
+        <td>{{ task_pool[item][8].values()|join(', ') }}</td>
+        <td><a href="/task/cancel?id={{ item }}">cancel</a>{% if task_pool[item][7].endswith('error') %}, <a href="/task/reset?id={{ item }}">reset</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% endblock%}

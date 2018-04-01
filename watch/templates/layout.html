@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+    <title>{{ g.title[request.endpoint] }} {{ request.view_args.values()|list|last }}</title>
+</head>
+<body style="visibility: hidden;">
+    <div class="flex-container">
+        <div class="flex-header">
+            <div><a href="{{ url_for('app_ui') }}"><img src="{{ url_for('static', filename='small_logo.png') }}"></a></div>
+            <div class="targets">
+                <form method="get">
+                    {% for item in config['USERS'][session['user_name']][2] %}
+                    <input type="submit" value="{{ item }}"
+                           class="{% if item == request.view_args.get('target') %}selected{% endif %}"
+                           formaction="{% if 'target' in request.view_args and request.view_args.keys()|length == 1 %}{{ url_for(request.endpoint, target=item) }}{% else %}{{ url_for('get_target', target=item) }}{% endif %}">
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+        <div class="flex-body">
+            <div class="flex-menu">
+                {% set menu_tree = config['MENU_TREE'] %}
+                {% for top_item in menu_tree.keys() %}
+                    {% if top_item == request.endpoint or menu_tree[top_item][0] == 'user' or request.view_args.get(menu_tree[top_item][0]) %}
+                        <a href="{{ url_for(top_item, **request.view_args) }}" class="top-menu-item{% if top_item == request.endpoint %} selected{% endif %}">{% if top_item == 'get_user' %}{{ session['user_name'] }}{% else %}{{ g.title[top_item] }}{% endif %}</a>
+                    {% endif %}
+                    {% if request.endpoint in menu_tree[top_item][1] or request.endpoint == top_item %}
+                        {% for sub_item in menu_tree[top_item][1] %}
+                           <a href="{{ url_for(sub_item, **request.view_args) }}" class="sub-menu-item{% if request.endpoint == sub_item %} selected{% endif %}">{{ g.title[sub_item] }}</a>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="flex-content">
+                <div class="form-caption">{{ g.title[request.endpoint] }}
+                    {%- for item in request.view_args.values() -%}
+                        <span class="caption-sep"> / </span>{{ item }}
+                    {%- endfor -%}
+                </div>
+{% block content %}
+{% if text is defined %}
+                <div>{{ text }}</div>
+{% endif %}
+{% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

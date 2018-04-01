@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+venv/
+.idea/
+config/stored_tasks
+config/local_config.py
+logs/*
+ext/*
+!ext/__init__.py
+todo*
