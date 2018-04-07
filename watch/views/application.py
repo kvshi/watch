@@ -40,10 +40,11 @@ def app_ui():
 
 @app.route('/get_user')
 def get_user():
-    return render_template('layout.html')
+    return render_template('layout.html'
+                           , text=f'Hello, {session["user_name"]}! Someday you will see here your profile settings...')
 
 
-@app.route('/get_app')
+@app.route('/adm')
 @title('Administration')
 def get_app():
     info = ['Oracle client version ' + '.'.join((str(x) for x in clientversion()))
@@ -101,42 +102,37 @@ def logout():
 def stop_server():
     if session['user_name'] not in app.config['ADMIN_GROUP']:
         abort(403)
-    target_sessions = ''
-    with lock:
-        for target in target_pool.keys():
-                target_sessions += '{} has {} acquired sessions<br>'.format(target, target_pool[target].busy)
     if worker.is_alive():
-        target_sessions += 'Waiting for task worker timeout...<br>'
         worker.shutdown()
-        worker.join()
     if bot.is_alive():
-        target_sessions += 'Waiting for message poll timeout...<br>'
         bot.shutdown()
-        bot.join()
     if app.config['STORE_FILE']:
-        target_sessions += 'Saving registered tasks...<br>'
         with open(app.config['STORE_FILE'], 'wb') as f:
             pickle(task_pool, f, HIGHEST_PROTOCOL)
     f = request.environ.get('werkzeug.server.shutdown')
-    if f is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    f()
-    return '{}Server shutting down...'.format(target_sessions)
+    if f:
+        if worker.is_alive():
+            worker.join()
+        if bot.is_alive():
+            bot.join()
+        f()
+        return str(request.environ)
+    elif request.environ.get('uwsgi.version'):
+        import uwsgi
+        pipe = uwsgi.opt.get('master-fifo')
+        if pipe:
+            with open(pipe, 'wb') as p:
+                p.write(b'q')
+        else:
+            uwsgi.stop()
+    else:
+        return 'Web server does not recognized, kill it manually.'
 
 
 @app.route('/error_log')
 @title('View error log')
 def get_error_log():
     file = path.join(path.dirname(path.dirname(path.abspath(__file__))), 'logs', app.config['ERROR_LOG_NAME'])
-    if not path.exists(file):
-        abort(404)
-    return send_file(file, mimetype='text/plain')
-
-
-@app.route('/access_log')
-@title('View access log')
-def get_access_log():
-    file = path.join(path.dirname(path.dirname(path.abspath(__file__))), 'logs', app.config['ACCESS_LOG_NAME'])
     if not path.exists(file):
         abort(404)
     return send_file(file, mimetype='text/plain')

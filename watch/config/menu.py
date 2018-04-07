@@ -49,8 +49,7 @@ menu_tree = {'get_user': ['user', []]
                                        , 'wait_for_uncommitted']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
-                           , ['stop_server'
+                           , ['get_notifications'
                               , 'get_error_log'
-                              , 'get_access_log'
-                              , 'get_notifications']]
+                              , 'stop_server']]
              , 'logout': ['user', []]}

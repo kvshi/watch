@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
-    <title>{{ g.title[request.endpoint] }} {{ request.view_args.values()|list|last }}</title>
+    <title>{{ g.title.get(request.endpoint, 'Watch') }} {{ request.view_args.values()|list|last }}</title>
 </head>
 <body style="visibility: hidden;">
     <div class="flex-container">

@@ -23,5 +23,5 @@ def forbidden(e):
 
 
 @app.errorhandler(400)
-def forbidden(e):
+def bad_request(e):
     return render_template('error.html', e=e, title='Bad request')

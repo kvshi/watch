@@ -1,7 +1,7 @@
 from flask import Flask
 import logging
 from logging.handlers import RotatingFileHandler
-from os import path
+from os import path, makedirs
 from collections import deque
 from threading import RLock
 from pickle import load as unpickle
@@ -50,6 +50,7 @@ app.before_request(validate_request)
 app.before_request(set_template_context)
 app.before_request(render_form)
 
+makedirs(path.join(path.dirname(__file__), 'logs'), exist_ok=True)
 log_handler = RotatingFileHandler(path.join(path.dirname(__file__), 'logs', app.config['ERROR_LOG_NAME'])
                                   , maxBytes=app.config['LOG_MAX_BYTES']
                                   , backupCount=app.config['LOG_BACKUP_COUNT']
@@ -58,14 +59,6 @@ log_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'
                                            , app.config['DATETIME_FORMAT']))
 log_handler.setLevel(logging.ERROR)
 app.logger.addHandler(log_handler)
-
-wkz_handler = RotatingFileHandler(path.join(path.dirname(__file__), 'logs', app.config['ACCESS_LOG_NAME'])
-                                  , maxBytes=app.config['LOG_MAX_BYTES']
-                                  , backupCount=app.config['LOG_BACKUP_COUNT']
-                                  , encoding='utf-8')
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.INFO)
-log.addHandler(wkz_handler)
 
 if app.config['WORKER_FREQ_SEC'] > 0:
         worker.start()

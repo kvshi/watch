@@ -22,8 +22,8 @@ SECRET_KEY = ''.join([choice(ascii_letters + digits + punctuation) for n in rang
 # Please note:
 #     1) Chrome does not send a cookie to localhost, so you may not be authenticated.
 #     2) Telegram does not recognize local hyperlinks.
-# That's why it is recommended to use "global" settings on local machine.
-# See the official flask docs to learn more about these params.
+# That's why it is recommended to use "global" settings on a local machine.
+# See the official Flask docs to learn more about these params.
 HOST = '127.0.0.1'  # [REQUIRED]
 PORT = 5000
 SERVER_NAME = None
@@ -138,7 +138,7 @@ USERS = {
 
 # [REQUIRED]
 # List of users, which allowed to shutdown the app server.
-ADMIN_GROUP = ['admin']
+ADMIN_GROUP = []
 
 # Now let's try to import settings which you have set in local_config.py
 try:

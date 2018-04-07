@@ -63,7 +63,7 @@ class Bot(threading.Thread):
                                     , update['message']['chat']['id']
                                     , update['message']['message_id'])
                     send_message({'chat_id': update['message']['chat']['id']
-                                  , 'text': '{} added.'.format(t_link(f'get_app?task_id={uuid}', 'Task'))
+                                  , 'text': '{} added.'.format(t_link(f'adm?task_id={uuid}', 'Task'))
                                   , 'parse_mode': 'HTML'})
             except Exception as e:
                 app.logger.error(e, exc_info=True)
