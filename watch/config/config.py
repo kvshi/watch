@@ -71,6 +71,9 @@ BOT_NAME = ''
 BOT_TOKEN = ''
 BOT_PATH = 'https://api.telegram.org/bot'
 
+# If you have to use a proxy put it here. For example {'https': 'https://127.0.0.1:81'}
+BOT_PROXY = {}
+
 # Watch server receives chat messages via long polls.
 # Set this parameter to 60 (seconds) or even more. if you are going to use a chat bot.
 # Please note: there is no reason to use extremely small values for this parameter.
@@ -130,9 +133,9 @@ TARGETS = {
 # user should send you id, to be able to communicate with the bot in private chat.
 # if it is not necessary, set to None
 # user can send /id command to your bot in private chat to find out it's id.
-# value[1] = list of targets (str) allowed to user.
+# value[2] = list of targets (str) allowed to user.
 USERS = {
-  # 'admin': ['p#ssw0rd', 419601542, ['OUR-DEV', ...]],
+  # 'admin': ['p#ssw0rd', 123, ['OUR-DEV', ...]],
   # 'guest': ['psswrOrd', None, ['OUR-DEV', ...]]
   }
 

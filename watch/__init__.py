@@ -5,6 +5,7 @@ from os import path, makedirs
 from collections import deque
 from threading import RLock
 from pickle import load as unpickle
+from urllib.request import ProxyHandler, build_opener, install_opener
 
 
 app = Flask(__name__)
@@ -60,8 +61,11 @@ log_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'
 log_handler.setLevel(logging.ERROR)
 app.logger.addHandler(log_handler)
 
+if app.config['BOT_PROXY']:
+    install_opener(build_opener(ProxyHandler(app.config['BOT_PROXY'])))
+
 if app.config['WORKER_FREQ_SEC'] > 0:
-        worker.start()
+    worker.start()
 
 if app.config['BOT_POLLING_FREQ_SEC'] > 0:
-        bot.start()
+    bot.start()

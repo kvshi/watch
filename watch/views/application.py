@@ -2,7 +2,7 @@ from flask import session, request, redirect, url_for, render_template, flash, s
 from watch import app, active_connections, target_pool, notification_pool, worker, task_pool, bot, lock
 from watch.utils.decorate_view import *
 from watch.utils.manage_task import cancel_task, reset_task
-from cx_Oracle import clientversion
+from cx_Oracle import clientversion, DatabaseError, OperationalError
 from platform import platform
 from time import sleep
 from os import path
@@ -102,29 +102,32 @@ def logout():
 def stop_server():
     if session['user_name'] not in app.config['ADMIN_GROUP']:
         abort(403)
+    with lock:
+        app.config['TARGETS'].clear()
+        app.config['USERS'].clear()
     if worker.is_alive():
         worker.shutdown()
+        worker.join()
     if bot.is_alive():
         bot.shutdown()
+        bot.join()
     if app.config['STORE_FILE']:
         with open(app.config['STORE_FILE'], 'wb') as f:
             pickle(task_pool, f, HIGHEST_PROTOCOL)
+    with lock:
+        for c in active_connections:
+            try:
+                c.cancel()
+            except (DatabaseError, OperationalError):
+                pass
     f = request.environ.get('werkzeug.server.shutdown')
     if f:
-        if worker.is_alive():
-            worker.join()
-        if bot.is_alive():
-            bot.join()
         f()
-        return str(request.environ)
+        return 'Good bye.'
     elif request.environ.get('uwsgi.version'):
         import uwsgi
-        pipe = uwsgi.opt.get('master-fifo')
-        if pipe:
-            with open(pipe, 'wb') as p:
-                p.write(b'q')
-        else:
-            uwsgi.stop()
+        uwsgi.stop()
+        return 'Good bye.'
     else:
         return 'Web server does not recognized, kill it manually.'
 
