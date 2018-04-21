@@ -1,2 +1,2 @@
 recursive-include watch *
-include run.py
+recursive-include bin *

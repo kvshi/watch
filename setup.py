@@ -8,4 +8,5 @@ setup(name='watch'
       , python_requires='>=3.6.0'
       , include_package_data=True
       , packages=['watch']
-      , install_requires=['cx-Oracle>=6.0.3', 'Flask>=0.12.2', 'pygal>=2.4.0'])
+      , install_requires=['cx-Oracle>=6.0.3', 'Flask>=0.12.2', 'pygal>=2.4.0']
+      , scripts=['bin/run_watch.py'])
