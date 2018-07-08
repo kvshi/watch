@@ -8,6 +8,7 @@ menu_tree = {'get_user': ['user', []]
                                  , 'get_target_waits'
                                  , 'get_target_long_ops'
                                  , 'get_temp_usage'
+                                 , 'get_undo_usage'
                                  , 'get_rman_status'
                                  , 'get_dml_locks']]
              , 'get_target_snapshot': ['target'
@@ -41,12 +42,14 @@ menu_tree = {'get_user': ['user', []]
                                 , 'get_table_ddl'
                                 , 'get_row_count']]
              , 'get_task': ['target', ['wait_for_execution'
+                                       , 'wait_for_session'
                                        , 'wait_for_status'
                                        , 'wait_for_heavy'
                                        , 'wait_for_temp'
                                        , 'wait_for_ts'
                                        , 'wait_for_expiry'
-                                       , 'wait_for_uncommitted']]
+                                       , 'wait_for_uncommitted'
+                                       , 'wait_for_queued']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'

@@ -1,5 +1,5 @@
 from flask import session, request, redirect, url_for, render_template, flash, send_file, abort
-from watch import app, active_connections, target_pool, notification_pool, worker, task_pool, bot, lock
+from watch import app, active_connections, target_pool, notification_pool, worker, task_pool, bot, lock, startup_time
 from watch.utils.decorate_view import *
 from watch.utils.manage_task import cancel_task, reset_task
 from cx_Oracle import clientversion, DatabaseError, OperationalError
@@ -47,14 +47,15 @@ def get_user():
 @app.route('/adm')
 @title('Administration')
 def get_app():
-    info = ['Oracle client version ' + '.'.join((str(x) for x in clientversion()))
-            , 'OS version ' + platform()]
+    info = [('Startup time', startup_time.strftime(app.config['DATETIME_FORMAT']))
+            , ('Oracle client version', '.'.join((str(x) for x in clientversion())))
+            , ('OS version ', platform())]
     with lock:
         if target_pool:
-            info.append('Session pools ' + ', '.join(target_pool.keys()))
+            info.append(('Session pools ', ', '.join(target_pool.keys())))
 
-        info.append('Background task worker is {}active'.format('' if worker.is_alive() else 'not '))
-        info.append('Chat bot is {}active'.format('' if bot.is_alive() else 'not '))
+        info.append(('Task worker', 'ON' if worker.is_alive() else 'OFF'))
+        info.append(('Chat bot', 'ON' if bot.is_alive() else 'OFF'))
 
         t = render_template('administration.html'
                             , info=info
@@ -79,10 +80,16 @@ def cancel_sql():
 @app.route('/task/<action>')
 def manage_task(action):
     with lock:
-        if task_pool[request.args['id']][7] == 'run':
+        if action == 'reset_all':
+            reset_task()
+        elif task_pool[request.args['id']][7] == 'run':
             flash(f'Can\'t {action} an active task.')
         elif action == 'cancel':
-            cancel_task(request.args['id'])
+            if session['user_name'] != task_pool[request.args['id']][3] \
+                    and session['user_name'] not in app.config['ADMIN_GROUP']:
+                flash('You must be an admin to cancel other users\' task.')
+            else:
+                cancel_task(request.args['id'])
         elif action == 'reset':
             reset_task(request.args['id'])
         else:
@@ -145,7 +152,7 @@ def get_error_log():
 @title('Tasks notifications')
 @columns({'time': 'datetime'
           , 'user': 'str'
-          , 'task_name': 'str'
+          , 'task': 'str'
           , 'parameters': 'str'
           , 'message': 'str'})
 def get_notifications():

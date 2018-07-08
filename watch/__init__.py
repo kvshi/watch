@@ -6,7 +6,7 @@ from collections import deque
 from threading import RLock
 from pickle import load as unpickle
 from urllib.request import ProxyHandler, build_opener, install_opener
-
+from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_pyfile(path.join(path.dirname(__file__), 'config', 'config.py'))
@@ -18,6 +18,7 @@ target_pool = {}
 active_connections = {}
 task_pool = {}
 notification_pool = deque(maxlen=app.config['MAX_KEPT_NOTIFICATIONS'])
+startup_time = datetime.now()
 
 if app.config['STORE_FILE'] and path.exists(app.config['STORE_FILE']):
     with open(app.config['STORE_FILE'], 'rb') as f:

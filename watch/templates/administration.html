@@ -1,8 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
-{% for item in info %}
-<div>{{ item }}</div>
-{% endfor %}
+<table>
+    {% for item in info %}
+    <tr><td class="attr-name">{{ item[0] }}</td><td>{{ item[1] }}</td></tr>
+    {% endfor %}
+    <tr><td class="attr-name">Actions</td><td><a href="/task/reset_all">Reset all tasks</a></td></tr>
+</table>
 {% if active_connections %}
 <div>Active connections:</div>
 <table>

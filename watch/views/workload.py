@@ -134,7 +134,8 @@ def get_advisor_task_report(target, owner, task):
 @title('Advisor findings')
 @template('list')
 @columns({"e.execution_start": 'datetime'
-          , "o.type": 'str'
+          , "f.type as f_type": 'str'
+          , "o.type as o_type": 'str'
           , "o.attr1": 'str'
           , "o.attr2": 'str'
           , "o.attr3": 'str'

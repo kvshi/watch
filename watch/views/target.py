@@ -10,7 +10,8 @@ from watch.utils.decorate_view import *
 @columns({"instance_name": 'str'
           , "version": 'str'
           , "host_name": 'str'
-          , "startup_time": 'datetime'})
+          , "startup_time": 'datetime'
+          , "user connected_as": 'str'})
 def get_target(target):
     return render_page()
 
@@ -173,7 +174,7 @@ def get_table_stats(target):
          , "segment_type": 'str'
          , "round(nvl(sum(bytes) / 1024 / 1024, 0)) size_mb": 'int'})
 @select("dba_segments group by tablespace_name, owner, segment_name, segment_type")
-@default_filters(("size_mb > 0",))
+@default_filters(("size_mb > 0", "tablespace_name like '%%'"))
 @default_sort("size_mb desc")
 def get_segment_usage(target):
     return render_page()
@@ -287,21 +288,21 @@ def get_top_sql(target):
 @title('Index stats')
 @template('list')
 @snail()
-@columns({"s.owner": 'str'
+@columns({"owner": 'str'
          , "object_type": 'str'
-         , "s.index_name": 'str'
-         , "s.table_name": 'str'
-         , "s.partition_name": 'str'
-         , "s.subpartition_name": 'str'
-         , "s.leaf_blocks": 'int'
-         , "s.distinct_keys": 'int'
-         , "s.avg_leaf_blocks_per_key": 'int'
-         , "s.avg_data_blocks_per_key": 'int'
-         , "s.clustering_factor": 'int'
-         , "s.num_rows": 'int'
-         , "s.last_analyzed": 'datetime'
-         , "s.stale_stats": 'str'})
-@select("all_ind_statistics s join v$parameter p on p.name  = 'db_block_size'")
+         , "index_name": 'str'
+         , "table_name": 'str'
+         , "partition_name": 'str'
+         , "subpartition_name": 'str'
+         , "leaf_blocks": 'int'
+         , "distinct_keys": 'int'
+         , "avg_leaf_blocks_per_key": 'int'
+         , "avg_data_blocks_per_key": 'int'
+         , "clustering_factor": 'int'
+         , "num_rows": 'int'
+         , "last_analyzed": 'datetime'
+         , "stale_stats": 'str'})
+@select("all_ind_statistics")
 @default_sort("last_analyzed")
 def get_index_stats(target):
     return render_page()
@@ -404,6 +405,20 @@ def get_modifications(target):
         " on u.tablespace_name = t.tablespace_name"
         " where t.contents = 'PERMANENT'")
 @default_sort("pct_fragmented desc")
-@default_filters(("used_segments_count >= 100 and pct_fragmented > 30",))
+@default_filters(("used_blocks_count >= 1000 and pct_fragmented > 30",))
 def get_ts_fragmentation(target):
+    return render_page()
+
+
+@app.route('/<target>/undo_usage')
+@title('Undo usage')
+@template('list')
+@auto()
+@select("v$session a inner join v$transaction b on a.saddr = b.ses_addr")
+@columns({"a.sid": 'int'
+         , "a.username": 'str'
+         , "b.used_urec": 'int'
+         , "b.used_ublk": 'int'})
+@default_sort("used_ublk desc")
+def get_undo_usage(target):
     return render_page()

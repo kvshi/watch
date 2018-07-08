@@ -2,7 +2,7 @@ from flask import render_template, session
 from watch import app, task_pool, lock
 from watch.utils.decorate_view import *
 from watch.utils.oracle import execute
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import deque
 from watch.utils.manage_message import t_pre, t_link
 
@@ -46,7 +46,7 @@ def wait_for_execution(uuid):
         return False, ''
     if task_pool[uuid][11]:
         return True, r[1].lower()
-    return True, '{} on {} is {}'.format(t_link(f'{task_pool[uuid][4]}/Q/{r[0]}', r[0])
+    return True, '{} on {} is {}.'.format(t_link(f'{task_pool[uuid][4]}/Q/{r[0]}', r[0])
                                          , task_pool[uuid][4]
                                          , r[1].lower())
 
@@ -80,6 +80,7 @@ def wait_for_status(uuid):
         if len(r) != 3:
             return True, 'Table or some columns not found. Column names must be unique.'
         status_type = ''
+        info_column_type = ''
         for c in r:
             if c[0] == task_pool[uuid][8]['date_column'] and c[1] != 'DATE':
                 return True, f'{task_pool[uuid][8]["date_column"]} is not a date.'
@@ -87,6 +88,8 @@ def wait_for_status(uuid):
                 return True, f'Unsupported type of {task_pool[uuid][8]["status_column"]} (neither number nor char).'
             else:
                 status_type = c[1]
+            if c[0] == task_pool[uuid][8]['info_column']:
+                info_column_type = c[1]
         status_values = tuple(v.strip() for v in task_pool[uuid][8]['status_values'].split(';'))
         if status_type == 'NUMBER':
             try:
@@ -95,15 +98,25 @@ def wait_for_status(uuid):
                 return True, f'All of status values ({task_pool[uuid][8]["status_values"]}) must be numbers.'
         task_pool[uuid][12] = {'status_values': status_values
                                , 'status_type': status_type
-                               , 'start_date': task_pool[uuid][2]}
+                               , 'start_date': task_pool[uuid][2]
+                               , 'info_column_type': info_column_type}
 
     end_date = datetime.now()
     p = {str(k): v for k, v in enumerate(task_pool[uuid][12]["status_values"], start=1)}
     p['start_date'] = task_pool[uuid][12]["start_date"]
     p['end_date'] = end_date
+    info_column_type = task_pool[uuid][12]['info_column_type']
+    info_column_convert = ''
+    if info_column_type == 'CLOB':
+        info_column_convert = f"cast(dbms_lob.substr({task_pool[uuid][8]['info_column']}, 100) as varchar2(100))"
+    elif 'CHAR' in info_column_convert:
+        info_column_convert = f"substr(to_char({task_pool[uuid][8]['info_column']}), 0, 100)"
+    else:
+        info_column_convert = f"to_char({task_pool[uuid][8]['info_column']})"
+
     r = execute(task_pool[uuid][4]
                 , f"select to_char({task_pool[uuid][8]['date_column']}, 'hh24:mi:ss')"
-                  f", to_char({task_pool[uuid][8]['info_column']})"
+                  f", {info_column_convert}"
                   f", {task_pool[uuid][8]['status_column']}"
                   f" from {task_pool[uuid][8]['owner']}.{task_pool[uuid][8]['table']}"
                   f" where {task_pool[uuid][8]['date_column']} >= :start_date"
@@ -297,3 +310,75 @@ def wait_for_ts(uuid):
             message_text += f'\n and {str(len(r) - max_count)} more...'
         task_pool[uuid][12] = tuple(item[0] for item in r)
         return False, message_text
+
+
+@app.route('/<target>/wait_for_session')
+@title('Wait for session')
+@template('task')
+@parameters({'sid': ' = int'})
+@period('1m')
+def wait_for_session(uuid):
+    if not task_pool[uuid][12]:
+        e = execute(task_pool[uuid][4]
+                    , "select sid, status from v$session where sid = :sid"
+                    , task_pool[uuid][8]
+                    , 'one'
+                    , False)
+        if not e:
+            return True, 'Not found'
+        task_pool[uuid][12] = {'sid': e[0]}
+    r = execute(task_pool[uuid][4]
+                , "select sid, status from v$session where sid = :sid"
+                , task_pool[uuid][12]
+                , 'one'
+                , False)
+    if not r:
+        return True, f"Session {task_pool[uuid][12]['sid']} is not found on {task_pool[uuid][4]}."
+    if r[1] != 'INACTIVE':
+        return False, ''
+    return True, f'Session {r[0]} on {task_pool[uuid][4]} is {r[1].lower()}.'
+
+
+@app.route('/<target>/wait_for_queued')
+@title('Wait for queued')
+@template('task')
+@parameters({'queued_time_sec': ' >= int'})
+@period('5m')
+def wait_for_queued(uuid):
+    pt = task_pool[uuid][9][-1:]
+    pv = task_pool[uuid][9][:-1]
+    task_pool[uuid][8]['start_date'] = datetime.now() - timedelta(weeks=int(pv) if pt == 'w' else 0
+                                                                  , days=int(pv) if pt == 'd' else 0
+                                                                  , hours=int(pv) if pt == 'h' else 0
+                                                                  , minutes=int(pv) if pt == 'm' else 0
+                                                                  , seconds=int(pv) if pt == 's' else 0)
+    r = execute(task_pool[uuid][4]
+                , "select nvl(sql_id, 'Unknown sql'), event, session_id, machine, count(1) waits"
+                  " from v$active_session_history"
+                  " where event like 'enq:%' and sample_time > :start_date"
+                  " group by sql_id, event, session_id, machine"
+                  " having count(1) > :queued_time_sec"
+                , task_pool[uuid][8]
+                , 'many'
+                , False)
+    if not r:
+        return False, ''
+    else:
+        if task_pool[uuid][12] is None:
+            task_pool[uuid][12] = deque(maxlen=100)  # todo: replace by set()
+        else:
+            for item in task_pool[uuid][12].copy():
+                if item not in [r_item[0] for r_item in r]:
+                    task_pool[uuid][12].remove(item)
+        message_text = '\n'.join('{} ({}, {}) on {} has been queued for {} seconds ({}).'
+                                 .format(t_link(f'{task_pool[uuid][4]}/Q/{item[0]}', item[0])
+                                         , item[3]
+                                         , item[2]
+                                         , task_pool[uuid][4]
+                                         , item[4]
+                                         , item[1])
+                                 for item in r if item[0] not in task_pool[uuid][12])
+        for item in r:
+            if item[0] not in task_pool[uuid][12]:
+                task_pool[uuid][12].appendleft(item[0])
+        return False, message_text or ''

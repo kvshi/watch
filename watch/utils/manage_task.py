@@ -29,10 +29,15 @@ def cancel_task(uuid):
         pass
 
 
-def reset_task(uuid):
+def reset_task(uuid=None):
     with lock:
-        try:
-            if task_pool[uuid][7].endswith('error'):
-                task_pool[uuid][7] = 'wait'
-        except KeyError:
-            pass
+        if uuid:
+            try:
+                if task_pool[uuid][7].endswith('error'):
+                    task_pool[uuid][7] = 'wait'
+            except KeyError:
+                pass
+        else:
+            for task in task_pool.values():
+                if task[7].endswith('error'):
+                    task[7] = 'wait'

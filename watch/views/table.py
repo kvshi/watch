@@ -11,7 +11,9 @@ from watch.utils.parse_args import parse_parameters
 @template('single')
 @columns({"num_rows": 'int'
           , "last_analyzed": 'datetime'
-          , "partitioned": 'str'})
+          , "partitioned": 'str'
+          , "compression": 'str'
+          , "compress_for": 'str'})
 @select("all_tables where owner = :owner and table_name = :p_table")
 def get_table(target, owner, table):
     return render_page()
@@ -130,7 +132,9 @@ def get_table_indexes(target, owner, table):
           , "subpartition_count": 'int'
           , "high_value": 'str'
           , "num_rows": 'int'
-          , "last_analyzed": 'int'})
+          , "last_analyzed": 'int'
+          , "compression": 'str'
+          , "compress_for": 'str'})
 @select("all_tab_partitions"
         " where table_owner = :owner and table_name = :p_table")
 def get_table_partitions(target, owner, table):
