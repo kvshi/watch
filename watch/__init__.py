@@ -24,6 +24,10 @@ if app.config['STORE_FILE'] and path.exists(app.config['STORE_FILE']):
     with open(app.config['STORE_FILE'], 'rb') as f:
         task_pool = unpickle(f)
 
+for task in task_pool.values():
+    if task[7] == 'run':  # if an exception has happened
+        task[7] = 'wait'
+
 from watch.utils.task_worker import Worker
 worker = Worker()
 

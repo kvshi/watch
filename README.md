@@ -105,6 +105,7 @@ Tabspace usage | Notify when some tablespace becomes full.
 Expired users | Notify if some user account expires.
 Uncommitted transactions | Notify when somebody has an inactive session containing locks.
 Wait for queued | Notify if some query has been queued too long.
+Wait for recycled | Notify to take out the trash.
 
 ### Making your own view
 There is two ways to add your code to the app:

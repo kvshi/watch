@@ -131,7 +131,7 @@ def wait_for_status(uuid):
     if not r:
         return False, ''
     else:
-        message_text = f'{task_pool[uuid][8]["table"]}:\n'
+        message_text = f'{task_pool[uuid][8]["table"]} ({task_pool[uuid][4]}):\n'
         max_count = 10
         message_text += t_pre('\n'.join(f'{item[0]} {item[1]} {item[2]}' for item in r[:max_count - 1]))
         if len(r) > max_count:
@@ -241,7 +241,8 @@ def wait_for_expiry(uuid):
 @app.route('/<target>/wait_for_uncommitted')
 @title('Uncommitted trans')
 @template('task')
-@parameters({'idle_time_minutes': ' >= int'})
+@parameters({'idle_time_minutes': ' >= int'
+             , 'ignore_tables': ' like str'})
 @period('1h')
 @command('/uncommitted')
 def wait_for_uncommitted(uuid):
@@ -250,6 +251,7 @@ def wait_for_uncommitted(uuid):
                   " from dba_dml_locks l"
                   " inner join v$session s on s.sid = l.session_id"
                   " where s.status != 'ACTIVE'"
+                  " and l.name not like :ignore_tables"
                   " and round(last_call_et / 60) >= :idle_time_minutes"
                 , task_pool[uuid][8]
                 , 'many'
@@ -342,7 +344,8 @@ def wait_for_session(uuid):
 @app.route('/<target>/wait_for_queued')
 @title('Wait for queued')
 @template('task')
-@parameters({'queued_time_sec': ' >= int'})
+@parameters({'queued_time_sec': ' >= int'
+             , 'ignore_event': ' like str'})
 @period('5m')
 def wait_for_queued(uuid):
     pt = task_pool[uuid][9][-1:]
@@ -356,6 +359,7 @@ def wait_for_queued(uuid):
                 , "select nvl(sql_id, 'Unknown sql'), event, session_id, machine, count(1) waits"
                   " from v$active_session_history"
                   " where event like 'enq:%' and sample_time > :start_date"
+                  " and event not like :ignore_event"
                   " group by sql_id, event, session_id, machine"
                   " having count(1) > :queued_time_sec"
                 , task_pool[uuid][8]
@@ -382,3 +386,26 @@ def wait_for_queued(uuid):
             if item[0] not in task_pool[uuid][12]:
                 task_pool[uuid][12].appendleft(item[0])
         return False, message_text or ''
+
+
+@app.route('/<target>/wait_recycled')
+@title('Wait for recycled')
+@template('task')
+@parameters({'space_gb': ' >= int'})
+@period('1d')
+def wait_for_recycled(uuid):
+    r = execute(task_pool[uuid][4]
+                , "select round(sum(r.space * p.value) / 1024 / 1024 / 1024) space_gb"
+                  " from dba_recyclebin r join v$parameter p on p.name = 'db_block_size'"
+                  " where r.can_purge = 'YES' and nvl(r.space, 0) <> 0"
+                  " having round(sum(r.space * p.value) / 1024 / 1024 / 1024) >= :space_gb"
+                , task_pool[uuid][8]
+                , 'one'
+                , False)
+    if not r:
+        task_pool[uuid][12] = 0
+    else:
+        if task_pool[uuid][12] is None or r[0] >= task_pool[uuid][12] * 2:  # to reduce excess messages
+            task_pool[uuid][12] = r[0]
+            return False, f'{r[0]} Gb can be purged from recycle bin on {task_pool[uuid][4]}.'
+    return False, ''

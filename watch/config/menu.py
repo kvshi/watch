@@ -49,7 +49,8 @@ menu_tree = {'get_user': ['user', []]
                                        , 'wait_for_ts'
                                        , 'wait_for_expiry'
                                        , 'wait_for_uncommitted'
-                                       , 'wait_for_queued']]
+                                       , 'wait_for_queued'
+                                       , 'wait_for_recycled']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'
