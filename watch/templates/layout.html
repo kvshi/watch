@@ -18,6 +18,13 @@
                     {% endfor %}
                 </form>
             </div>
+            {% if 'target' in request.view_args %}
+            <div>
+                <form method="get" action="{{ url_for('search', target=request.view_args['target']) }}">
+                    <input type="search" name="text" minlength=3 maxlength=13 placeholder="Search sql or session" required>
+                </form>
+            </div>
+            {% endif %}
         </div>
         <div class="flex-body">
             <div class="flex-menu">
@@ -42,6 +49,9 @@
 {% block content %}
 {% if text is defined %}
                 <div>{{ text }}</div>
+{% endif %}
+{% if formatted_text is defined %}
+                <pre>{{ formatted_text }}</pre>
 {% endif %}
 {% endblock %}
             </div>

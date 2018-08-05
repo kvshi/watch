@@ -6,6 +6,15 @@
         <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
     </label>
     {% endfor %}
+    {% if g.optional %}
+    <br>
+    {% for k, v in g.optional.items() %}
+    <label>{% if loop.index == 1 %}Optional{% endif %}
+        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
+    </label>
+    {% endfor %}
+    <br>
+    {% endif %}
     <label>Period
         <input type="text" class="sql-text" name="period" size="6" value="{% if request.args.get('period') %}{{ request.args['period'] }}{% else %}{{ g.period }}{% endif %}">
     </label>
@@ -20,7 +29,7 @@
     <input type="submit" value="Add">
 </form>
 {% if uuid is defined %}
-<div>Task {{ uuid }} created. See the <a href="/adm?task_id={{ uuid }}">Task list.</a></div>
+<div>Task ...{{ uuid[-8:] }} created. See the <a href="/adm?task_id={{ uuid }}">Task list.</a></div>
 {% endif %}
 {% include 'flashed.html' %}
 {% endblock %}

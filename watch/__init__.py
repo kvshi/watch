@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from os import path, makedirs
 from collections import deque
 from threading import RLock
-from pickle import load as unpickle
+
 from urllib.request import ProxyHandler, build_opener, install_opener
 from datetime import datetime
 
@@ -13,20 +13,13 @@ app.config.from_pyfile(path.join(path.dirname(__file__), 'config', 'config.py'))
 app.jinja_env.lstrip_blocks = True
 app.jinja_env.trim_blocks = True
 
+startup_time = datetime.now()
 lock = RLock()
 target_pool = {}
 active_connections = {}
-task_pool = {}
+from watch.utils.manage_task import restore_tasks
+task_pool = restore_tasks()
 notification_pool = deque(maxlen=app.config['MAX_KEPT_NOTIFICATIONS'])
-startup_time = datetime.now()
-
-if app.config['STORE_FILE'] and path.exists(app.config['STORE_FILE']):
-    with open(app.config['STORE_FILE'], 'rb') as f:
-        task_pool = unpickle(f)
-
-for task in task_pool.values():
-    if task[7] == 'run':  # if an exception has happened
-        task[7] = 'wait'
 
 from watch.utils.task_worker import Worker
 worker = Worker()

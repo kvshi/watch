@@ -1,7 +1,7 @@
 from flask import session, g, request, redirect, url_for, abort, flash, render_template
-from watch import title, columns, worker
+from watch import title, columns, worker, task_pool
 from watch.utils.parse_args import *
-from watch.utils.manage_task import add_task
+from watch.utils.manage_task import Task
 
 
 def validate_request():
@@ -33,6 +33,7 @@ def set_template_context():
     g.types = list(columns[request.endpoint].values()) if request.endpoint in columns.keys() else []
     g.content = getattr(f, 'content', '')
     g.parameters = getattr(f, 'parameters', {})
+    g.optional = getattr(f, 'optional', {})
     g.pct_columns = tuple(i for i, v in enumerate(g.columns) if v.startswith('pct_'))
     g.snail = getattr(f, 'snail', False)
     g.sql_id = g.columns.index('sql_id') if 'sql_id' in g.columns else -1
@@ -75,7 +76,7 @@ def render_list():
     rf = rs = 0
     rr = ''
     if request.args.get('filter'):
-        rf, g.filter_expr, g.filter_values = parse_filter(request.args['filter'], f.columns)
+        rf, g.filter_expr, g.filter_values = parse_filter_expr(request.args['filter'], f.columns)
         if rf:
             flash(f'Incorrect filter expression at char: {rf}')
     if request.args.get('sort'):
@@ -95,9 +96,13 @@ def render_list():
 def render_task():
     if 'do' not in request.args:
         return render_template('task.html')
-    rr, g.required_values = parse_parameters(request.args, g.parameters)
+    rr, required_values = parse_parameters(request.args, g.parameters)
     if rr:
         flash(f'Incorrect value for required parameter: {rr}')
+        return render_template('task.html')
+    rr, optional = parse_parameters(request.args, g.optional, True)
+    if rr:
+        flash(f'Incorrect value for optional parameter: {rr}')
         return render_template('task.html')
     if not worker.is_alive():
         flash('Background task worker is inactive, please contact your system administrator')
@@ -112,11 +117,12 @@ def render_task():
     if request.args.get('notify', '') != '0' and request.args.get('notify', '') \
             in (str(k) for k in g.notification_list.keys()):
         chat_id = request.args['notify']
-    uuid = add_task(request.endpoint
-                    , session['user_name']
-                    , request.view_args['target']
-                    , {k: v for k, v in g.required_values.items()}
-                    , chat_id
-                    , None
-                    , period_value)
-    return render_template('task.html', uuid=uuid)
+    task = Task(endpoint=request.endpoint
+                , user_name=session['user_name']
+                , target=request.view_args['target']
+                , parameters={k: v for k, v in required_values.items()}
+                , chat_id=chat_id
+                , period=period_value
+                , optional=optional)
+    task_pool[task.uuid] = task
+    return render_template('task.html', uuid=task.uuid)

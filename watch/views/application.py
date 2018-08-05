@@ -1,12 +1,11 @@
 from flask import session, request, redirect, url_for, render_template, flash, send_file, abort
 from watch import app, active_connections, target_pool, notification_pool, worker, task_pool, bot, lock, startup_time
 from watch.utils.decorate_view import *
-from watch.utils.manage_task import cancel_task, reset_task
+from watch.utils.manage_task import cancel_task, reset_task, store_tasks
 from cx_Oracle import clientversion, DatabaseError, OperationalError
 from platform import platform
 from time import sleep
 from os import path
-from pickle import dump as pickle, HIGHEST_PROTOCOL
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -78,20 +77,25 @@ def cancel_sql():
 
 
 @app.route('/task/<action>')
+@title('Manage task')
 def manage_task(action):
+    if action == 'browse':
+        if not task_pool.get(request.args['id']):
+            abort(404)
+        return render_template('layout.html', formatted_text=task_pool[request.args['id']])
     with lock:
         if action == 'reset_all':
-            reset_task()
-        elif task_pool[request.args['id']][7] == 'run':
+            reset_task(task_pool)
+        elif task_pool[request.args['id']].state == 'run':
             flash(f'Can\'t {action} an active task.')
         elif action == 'cancel':
-            if session['user_name'] != task_pool[request.args['id']][3] \
+            if session['user_name'] != task_pool[request.args['id']].user_name \
                     and session['user_name'] not in app.config['ADMIN_GROUP']:
                 flash('You must be an admin to cancel other users\' task.')
             else:
-                cancel_task(request.args['id'])
+                cancel_task(task_pool, request.args['id'])
         elif action == 'reset':
-            reset_task(request.args['id'])
+            reset_task(task_pool, request.args['id'])
         else:
             abort(400)
     return redirect(url_for('get_app'))
@@ -118,9 +122,7 @@ def stop_server():
     if bot.is_alive():
         bot.shutdown()
         bot.join()
-    if app.config['STORE_FILE']:
-        with open(app.config['STORE_FILE'], 'wb') as f:
-            pickle(task_pool, f, HIGHEST_PROTOCOL)
+    store_tasks(task_pool)
     with lock:
         for c in active_connections:
             try:
@@ -157,7 +159,7 @@ def get_error_log():
           , 'message': 'str'})
 def get_notifications():
     with lock:
-        task_count = len(tuple(1 for v in task_pool.values() if v[7] in ('wait', 'run')))
+        task_count = len(tuple(1 for v in task_pool.values() if v.state in ('wait', 'run')))
         t = render_template('static_list.html'
                             , text=f'{task_count} tasks are active. '
                                    f'Only last {app.config["MAX_KEPT_NOTIFICATIONS"]} task messages will be kept.'
@@ -169,3 +171,13 @@ def get_notifications():
 @title('Extensions')
 def get_ext(target):
     return render_template('layout.html')
+
+
+@app.route('/<target>/search')
+@title('Search')
+def search(target):
+    text = request.args['text']
+    if len(text) <= 4 and text.isdigit():
+        return redirect(url_for('get_session_monitor', target=target, filter=f'sid = {text}', do='search'))
+    else:
+        return redirect(url_for('get_query', target=target, query=text))

@@ -2,7 +2,7 @@ from watch import app
 from datetime import datetime, timedelta
 
 
-def parse_filter(source, columns):
+def parse_filter_expr(source, columns):
     comparisons = ('>=', '<=', '<>', '!=', '>', '<', '=', 'is not null', 'is null', 'not like', 'like')
     booleans = ('and', 'or')
     directives = ('w', 'd', 'h', 'm', 's')
@@ -119,13 +119,15 @@ def parse_filter(source, columns):
     return 0, filter_expr, values
 
 
-def parse_parameters(source, required):
+def parse_parameters(source, required, optional=False):
     required_values = {}
     directives = ('w', 'd', 'h', 'm', 's')
 
     for k, v in required.items():
         v_type = v.split(' ')[-1]
         value = source[k].strip('\'')
+        if optional and not value:
+            continue
         if v_type == 'int':
             try:
                 int(source[k])

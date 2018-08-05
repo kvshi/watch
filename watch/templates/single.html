@@ -2,7 +2,7 @@
 {% block content %}
 {% include 'flashed.html' %}
 {% if data %}
-    {% if g.content == 'html'%}
+    {% if g.content == 'html' %}
     <iframe srcdoc="{{ data }}">
     </iframe>
     {% elif g.content == 'text' %}

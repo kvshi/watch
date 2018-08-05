@@ -1,6 +1,6 @@
-from watch import app
+from watch import app, task_pool
 from watch.utils.parse_args import parse_command
-from watch.utils.manage_task import add_task
+from watch.utils.manage_task import Task
 from watch.utils.manage_message import send_message, get_updates, t_link
 import threading
 from json import loads
@@ -56,14 +56,15 @@ class Bot(threading.Thread):
                         send_message({'chat_id': update['message']['chat']['id']
                                       , 'text': f'Target "{target}" does not exist or not allowed.'})
                         continue
-                    uuid = add_task(endpoint
-                                    , user_name
-                                    , target
-                                    , parameters
-                                    , update['message']['chat']['id']
-                                    , update['message']['message_id'])
+                    task = Task(endpoint=endpoint
+                                , user_name=user_name
+                                , target=target
+                                , parameters=parameters
+                                , chat_id=update['message']['chat']['id']
+                                , reply_to_message_id=update['message']['message_id'])
+                    task_pool[task.uuid] = task
                     send_message({'chat_id': update['message']['chat']['id']
-                                  , 'text': '{} added.'.format(t_link(f'adm?task_id={uuid}', 'Task'))
+                                  , 'text': '{} added.'.format(t_link(f'adm?task_id={task.uuid}', 'Task'))
                                   , 'parse_mode': 'HTML'})
             except Exception as e:
                 app.logger.error(e, exc_info=True)

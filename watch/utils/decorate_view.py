@@ -87,3 +87,10 @@ def command(task_command):
         f.command = task_command
         return f
     return decorator
+
+
+def optional(optional_parameters):
+    def decorator(f):
+        f.optional = optional_parameters
+        return f
+    return decorator
