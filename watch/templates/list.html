@@ -21,7 +21,7 @@
     </label>
     <input type="hidden" name="do">
     <input type="submit" value="Run">
-     {% if g.snail %}<span class="form-caption" title="This view could be very slow...">&#128012</span>{% endif %}
+    {% if g.snail %}<span class="form-caption" title="This view could be very slow...">&#128012</span>{% endif %}
 </form>
 <div class="sql-hint-container">
     {% for item in g.columns %}

@@ -1,10 +1,11 @@
 from flask import render_template, session
 from watch import app, task_pool, lock
 from watch.utils.decorate_view import *
-from watch.utils.oracle import execute
+from watch.utils.oracle import execute, get_tab_columns
+from watch.utils.parse_args import dlm_str_to_list, upper_values
 from datetime import datetime, timedelta
 from collections import deque
-from watch.utils.manage_message import t_pre, t_link
+from watch.utils.manage_message import t_link
 
 
 @app.route('/<target>/task')
@@ -58,78 +59,70 @@ def wait_for_execution(t):
              , "table": ' = str'
              , "date_column": ' = str'
              , "status_column": ' = str'
-             , "status_values": ' = s1;s2;sn str'
-             , "info_column": ' = str'})
+             , "status_values": ' = s1;s2;sN str'
+             , "info_column": ' = i1;i2;iN str'})
 @optional({"filter_column": ' = str'
           , "filter_value": ' = str'})
 @period('30m')
 def wait_for_status(t):
     if not t.data:
-        t.parameters = {k: v.strip().upper() for k, v in t.parameters.items()}
-        r = execute(t.target
-                    , "select distinct column_name, data_type"
-                      " from dba_tab_columns"
-                      " where owner = :owner"
-                      " and table_name = :p_table"
-                      " and column_name in (:date_column, :status_column, :info_column, :filter_column)"
-                    , {'owner': t.parameters['owner']
-                       , 'p_table': t.parameters['table']
-                       , 'date_column': t.parameters['date_column']
-                       , 'status_column': t.parameters['status_column']
-                       , 'info_column': t.parameters['info_column']
-                       , 'filter_column': t.optional.get('filter_column', '')}
-                    , 'many'
-                    , False)
-        if len(r) != (4 if 'filter_column' in t.optional.keys() else 3):
-            return True, 'Table or some columns not found. Column names must be unique.'
-        status_type = ''
-        info_column_type = ''
-        filter_column_type = ''
-        for c in r:
-            if c[0] == t.parameters['date_column'] and c[1] != 'DATE':
-                return True, f'{t.parameters["date_column"]} is not a date.'
-            if c[0] == t.parameters['status_column'] and c[1] != 'NUMBER' and 'CHAR' not in c[1]:
-                return True, f'Unsupported type of {t.parameters["status_column"]} (neither number nor char).'
-            else:
-                status_type = c[1]
-            if c[0] == t.parameters['info_column']:
-                info_column_type = c[1]
-            if c[0] == t.optional.get('filter_column', ''):
-                if c[1] != 'NUMBER' and 'CHAR' not in c[1]:
-                    return True, f'Unsupported type of {t.optional["filter_column"]}' \
-                                 f' (neither number nor char).'
-                filter_column_type = c[1]
-                if not t.optional.get('filter_value', False):
-                    return True, 'Filter value is not set.'
-        status_values = tuple(v.strip() for v in t.parameters['status_values'].split(';'))
+        t.parameters = upper_values(t.parameters)
+        t.parameters['status_values'] = dlm_str_to_list(t.parameters['status_values'])
+        t.parameters['info_column'] = dlm_str_to_list(t.parameters['info_column'])
+        table_columns = get_tab_columns(t.target, t.parameters['owner'], t.parameters['table'])
+        for item in [t.parameters['date_column'], t.parameters['status_column']] + t.parameters['info_column']:
+            if item not in table_columns.keys():
+                return True, f'{t.parameters["owner"]}.{t.parameters["table"]}.{item} not found.'
+        if table_columns[t.parameters['date_column']] != 'DATE':
+            return True, f'{t.parameters["date_column"]} must be a date type.'
+
+        status_type = table_columns[t.parameters['status_column']]
+        if status_type != 'NUMBER' and 'CHAR' not in status_type:
+            return True, f'Unsupported type of {t.parameters["status_column"]} (neither number nor char).'
         if status_type == 'NUMBER':
             try:
-                status_values = tuple(int(v) for v in status_values)
+                t.parameters['status_values'] = [int(v) for v in t.parameters['status_values']]
             except ValueError:
                 return True, f'All of status values ({t.parameters["status_values"]}) must be numbers.'
-        t.data = {'status_values': status_values
+
+        t.parameters['info_column'] = {k: table_columns[k] for k in t.parameters['info_column']}
+
+        filter_column_type = ''
+        if t.optional.get('filter_column', False):
+            if t.optional['filter_column'] not in table_columns.keys():
+                return True, f'{t.parameters["owner"]}.{t.parameters["table"]}.{t.optional["filter_column"]} not found.'
+            filter_column_type = table_columns[t.optional['filter_column']]
+            if filter_column_type != 'NUMBER' and 'CHAR' not in filter_column_type:
+                return True, f'Unsupported type of {t.optional["filter_column"]} (neither number nor char).'
+            if not t.optional.get('filter_value', False):
+                return True, 'Filter value is not set.'
+            if filter_column_type == 'NUMBER':
+                try:
+                    t.optional['filter_value'] = int(t.optional['filter_value'])
+                except ValueError:
+                    return True, f'Filter value must be a number.'
+        t.data = {'status_values': t.parameters['status_values']
                   , 'status_type': status_type
                   , 'start_date': t.create_date
-                  , 'info_column_type': info_column_type
                   , 'filter_column_type': filter_column_type}
 
     end_date = datetime.now()
-    p = {str(k): v for k, v in enumerate(t.data["status_values"], start=1)}
+    p = {str(k): v for k, v in enumerate(t.data['status_values'], start=1)}
     p['start_date'] = t.data['start_date']
     p['end_date'] = end_date
     p['filter_value'] = t.optional.get('filter_value', '1')
-    info_column_type = t.data['info_column_type']
-    info_column_convert = ''
-    if info_column_type == 'CLOB':
-        info_column_convert = f"cast(dbms_lob.substr({t.parameters['info_column']}, 255) as varchar2(100))"
-    elif 'CHAR' in info_column_convert:
-        info_column_convert = f"substr(to_char({t.parameters['info_column']}), 0, 255)"
-    else:
-        info_column_convert = f"to_char({t.parameters['info_column']})"
-
+    info_column_list = []
+    for c, ct in t.parameters['info_column'].items():
+        if ct == 'CLOB':
+            info_column_list.append(f"cast(dbms_lob.substr({c}, 255) as varchar2(255))")
+        elif 'CHAR' in ct:
+            info_column_list.append(f"substr(to_char({c}), 0, 255)")
+        else:
+            info_column_list.append(f"to_char({c})")
+    info_column_sql_text = ' || \' \' || '.join(info_column_list)
     r = execute(t.target
                 , f"select to_char({t.parameters['date_column']}, 'hh24:mi:ss')"
-                  f", {info_column_convert}"
+                  f", {info_column_sql_text}"
                   f", {t.parameters['status_column']}"
                   f" from {t.parameters['owner']}.{t.parameters['table']}"
                   f" where {t.parameters['date_column']} >= :start_date"
@@ -148,7 +141,7 @@ def wait_for_status(t):
     else:
         message_text = f'{t.parameters["table"]} ({t.target}):\n'
         max_count = 10
-        message_text += t_pre('\n'.join(f'{item[0]} {item[1]} {item[2]}' for item in r[:max_count - 1]))
+        message_text += '\n'.join(f'{item[0]} {item[1]}' for item in r[:max_count - 1])
         if len(r) > max_count:
             message_text += f'\n and {str(len(r) - max_count)} more...'
     return False, message_text
@@ -256,8 +249,8 @@ def wait_for_expiry(t):
 @app.route('/<target>/wait_for_uncommitted')
 @title('Uncommitted trans')
 @template('task')
-@parameters({'idle_time_minutes': ' >= int'
-             , 'ignore_tables': ' - like str'})
+@parameters({'idle_time_minutes': ' >= int'})
+@optional({'ignore_tables': ' like str'})
 @period('1h')
 @command('/uncommitted')
 def wait_for_uncommitted(t):
@@ -268,7 +261,8 @@ def wait_for_uncommitted(t):
                   " where s.status != 'ACTIVE'"
                   " and l.name not like :ignore_tables"
                   " and round(last_call_et / 60) >= :idle_time_minutes"
-                , t.parameters
+                , {'idle_time_minutes': t.parameters['idle_time_minutes']
+                    , 'ignore_tables': t.optional.get('ignore_tables', '-')}
                 , 'many'
                 , False)
     if not r:
@@ -286,10 +280,11 @@ def wait_for_uncommitted(t):
 @app.route('/<target>/wait_for_ts')
 @title('Critical tabspace usage')
 @template('task')
-@parameters({'pct_used': ' >= int'
-             , 'tablespace_name': ' like str'})
+@parameters({'pct_used': ' >= int'})
+@optional({'tablespace_name': ' like str'})
 @period('6h')
 @command('/ts')
+@snail()
 def wait_for_ts(t):
     r = execute(t.target
                 , "select * from ("
@@ -310,7 +305,7 @@ def wait_for_ts(t):
                   " from dba_free_space"
                   " group by tablespace_name) free on free.tablespace_name = files.tablespace_name"
                   ") where pct_used >= :pct_used and tablespace_name like :tablespace_name"
-                , t.parameters
+                , {'pct_used': t.parameters['pct_used'], 'tablespace_name': t.optional.get('tablespace_name', '%')}
                 , 'many'
                 , False)
     if not r:

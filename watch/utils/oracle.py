@@ -75,3 +75,14 @@ def execute(target, statement, parameters=None, fetch_mode='many', user_context=
             except DatabaseError:
                 pass
     return result
+
+
+def get_tab_columns(target, owner, table_name):
+    return {item[0]: item[1] for item in execute(target
+                                                 , 'select column_name, data_type'
+                                                   ' from dba_tab_columns'
+                                                   ' where owner = :owner'
+                                                   ' and table_name = :table_name'
+                                                 , {'owner': owner, 'table_name': table_name}
+                                                 , 'many'
+                                                 , False)}

@@ -242,3 +242,11 @@ def parse_period(source):
     except ValueError:
             return 'Incorrect period value.', None
     return None, value
+
+
+def dlm_str_to_list(s):
+    return s.strip(' ;').split(';')
+
+
+def upper_values(d):
+    return {k: v.strip().upper() if isinstance(v, str) else v for k, v in d.items()}

@@ -27,6 +27,7 @@
     </label>
     <input type="hidden" name="do">
     <input type="submit" value="Add">
+    {% if g.snail %}<span class="form-caption" title="This task could be very slow, other task will be waiting...">&#128012</span>{% endif %}
 </form>
 {% if uuid is defined %}
 <div>Task ...{{ uuid[-8:] }} created. See the <a href="/adm?task_id={{ uuid }}">Task list.</a></div>
