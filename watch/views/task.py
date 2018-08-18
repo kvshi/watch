@@ -1,7 +1,7 @@
 from flask import render_template, session
 from watch import app, task_pool, lock
 from watch.utils.decorate_view import *
-from watch.utils.oracle import execute, get_tab_columns
+from watch.utils.oracle import execute, get_tab_columns, ping
 from watch.utils.parse_args import dlm_str_to_list, upper_values
 from datetime import datetime, timedelta
 from collections import deque
@@ -73,8 +73,8 @@ def wait_for_status(t):
         for item in [t.parameters['date_column'], t.parameters['status_column']] + t.parameters['info_column']:
             if item not in table_columns.keys():
                 return True, f'{t.parameters["owner"]}.{t.parameters["table"]}.{item} not found.'
-        if table_columns[t.parameters['date_column']] != 'DATE':
-            return True, f'{t.parameters["date_column"]} must be a date type.'
+        if table_columns[t.parameters['date_column']] not in ('DATE', 'TIMESTAMP'):
+            return True, f'{t.parameters["date_column"]} must be a date or timestamp type.'
 
         status_type = table_columns[t.parameters['status_column']]
         if status_type != 'NUMBER' and 'CHAR' not in status_type:
@@ -355,8 +355,8 @@ def wait_for_session(t):
 @app.route('/<target>/wait_for_queued')
 @title('Wait for queued')
 @template('task')
-@parameters({'queued_time_sec': ' >= int'
-             , 'ignore_event': ' like str'})
+@parameters({'queued_time_sec': ' >= int'})
+@optional({'ignore_event': ' like str'})
 @period('5m')
 def wait_for_queued(t):
     pt = t.period[-1:]
@@ -373,7 +373,8 @@ def wait_for_queued(t):
                   " and event not like :ignore_event"
                   " group by sql_id, event, session_id, machine"
                   " having count(1) > :queued_time_sec"
-                , t.parameters
+                , {'queued_time_sec': t.parameters['queued_time_sec']
+                    , 'ignore_event': t.optional.get('ignore_event', '---')}
                 , 'many'
                 , False)
     if not r:
@@ -419,4 +420,95 @@ def wait_for_recycled(t):
         if t.data is None or r[0] >= t.data * 2:  # to reduce excess messages
             t.data = r[0]
             return False, f'{r[0]} Gb can be purged from recycle bin on {t.target}.'
+    return False, ''
+
+
+@app.route('/<target>/check_size')
+@title('Check segment size')
+@template('task')
+@parameters({'owner': ' = str'
+             , 'segment_name': ' = str'
+             , 'size_mb': ' >= int'})
+@period('1d')
+def check_size(t):
+    if not t.data:
+        t.data = t.parameters['size_mb']
+    r = execute(t.target
+                , "select round(nvl(sum(bytes) / 1024 / 1024, 0)) size_mb"
+                  " from dba_segments"
+                  " where owner = :owner and segment_name = :segment_name"
+                , {'owner': t.parameters['owner'], 'segment_name': t.parameters['segment_name']}
+                , 'one'
+                , False)
+    if not r:
+        return True, f'Segment {t.parameters["owner"]}.{t.parameters["segment_name"]} not found.'
+    if r[0] >= t.data:
+        t.data = r[0] * 2  # to reduce excess messages
+        return False, f'{t.parameters["owner"]}.{t.parameters["segment_name"]} size reached {r[0]} mb on {t.target}.'
+    else:
+        t.data = None
+        return False, ''
+
+
+@app.route('/<target>/check_resource_usage')
+@title('Check res usage')
+@template('task')
+@parameters({'pct_used': ' 0..100% >= int'})
+@period('1h')
+def check_resource_usage(t):
+    r = execute(t.target
+                , "select resource_name, to_char(current_utilization), trim(limit_value)"
+                  ", round((current_utilization / to_number(limit_value)) * 100)"
+                  " from v$resource_limit"
+                  " where trim(limit_value) not in ('0', 'UNLIMITED')"
+                  " and round((current_utilization / to_number(limit_value)) * 100) >= :pct_used"
+                , t.parameters
+                , 'many'
+                , False)
+    if not r:
+        return False, ''
+    else:
+        return False, '\n'.join(f'The resource {t.target}.{item[0]}'
+                                f' is {item[3]}% used ({item[1]} of {item[2]}).' for item in r)
+
+
+@app.route('/<target>/wait_for_sql_error')
+@title('Wait for SQL error')
+@template('task')
+@period('5m')
+def wait_for_sql_error(t):
+    if not t.data:
+        t.data = {'start_date': t.create_date}
+    end_date = datetime.now()
+    r = execute(t.target
+                , "select username, sql_id, sid, error_message"
+                  " from v$sql_monitor"
+                  " where status = 'DONE (ERROR)' and error_number <> 1013"  # user requested cancel of an operation
+                  " and sql_exec_start between :start_date and :end_date"
+                , {'start_date': t.data['start_date'], 'end_date': end_date}
+                , 'many'
+                , False)
+    t.data['start_date'] = end_date
+    if not r:
+        return False, ''
+    else:
+        return False, '\n'.join('{} ({}, {}) on {} is failed({})'
+                                .format(t_link(f'{t.target}/Q/{item[1]}', item[1])
+                                        , item[2]
+                                        , item[0]
+                                        , t.target
+                                        , item[3].replace('\n', ' '))
+                                for item in r[:10]) + '' if len(r) <= 10 else f'\n and {str(len(r) - 10)} more...'
+
+
+@app.route('/<target>/ping_target')
+@title('Ping target')
+@template('task')
+@period('10m')
+def ping_target(t):
+    if ping(t.target) == -1 and t.data != -1:
+        t.data = -1
+        return False, f'Target {t.target} did not respond properly.'
+    else:
+        t.data = 0
     return False, ''

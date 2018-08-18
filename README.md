@@ -14,7 +14,8 @@ Oracle DB has an infinity number of system views which may give answers for ques
 * and many many others.
 
 The problem is you have no GUI to work with these views. So, you retype the same query every time you need some DB statistics.
-The Watch provides easy way to wrap a query to a web report and share it with your team.
+This app provides easy way to wrap a query to a web report and share it with your team.
+Of course, it is actual if your company don't want to buy Oracle Enterprise Manager.
 
 ### Features
 * Flask-based. Minimum dependencies. Easy to customize.
@@ -78,7 +79,8 @@ Tabspace usage | dba_free_space
 Tabspace fragmentation | dba_segments
 Users | dba_users
 Privileges | dba_tab_privs
-Too partitioned | Helps to find extremely partitioned objects.
+Tab partition count | Helps to find extremely partitioned tables.
+Ind partition count | Helps to find extremely partitioned indexes.
 Modifications | all_tab_modifications
 Query text | v$sql
 Query plan | dbms_xplan.display_cursor
@@ -106,6 +108,10 @@ Expired users | Notify if some user account expires.
 Uncommitted transactions | Notify when somebody has an inactive session containing locks.
 Wait for queued | Notify if some query has been queued too long.
 Wait for recycled | Notify to take out the trash.
+Check segment size | Notify when segment (table, index, ...) size has reached specified threshold. 
+Check resource usage | Notify when some of server resource usage reached specified threshold
+Wait for SQL error | Notify if some query has failed. It is based on sql monitor, but a trigger on servererror is much better.
+Ping target | Notify if ping to the target has failed.
 
 ### Making your own view
 There is two ways to add your code to the app:

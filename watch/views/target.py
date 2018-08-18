@@ -356,17 +356,33 @@ def get_dml_locks(target):
     return render_page()
 
 
-@app.route('/<target>/too_partitioned')
-@title('Too partitioned')
+@app.route('/<target>/tab_partitions')
+@title('Tab partitions count')
 @template('list')
 @snail()
-@columns({"object_name": 'str'
-          , "sum(case object_type when 'TABLE PARTITION' then 1 else 0 end) part_count": 'int'
-          , "sum(case object_type when 'TABLE SUBPARTITION' then 1 else 0 end) subpart_count": 'int'})
-@select("all_objects where object_type in ('TABLE PARTITION', 'TABLE SUBPARTITION') group by object_name")
-@default_sort("object_name")
+@columns({"table_owner": 'str'
+          , "table_name": 'str'
+          , "count(partition_name) part_count": 'int'
+          , "sum(subpartition_count) subpart_count": 'int'})
+@select("all_tab_partitions group by table_owner, table_name")
+@default_sort("part_count desc")
 @default_filters(("part_count > 1000 or subpart_count > 1000",))
-def get_too_partitioned(target):
+def get_tab_partitions_count(target):
+    return render_page()
+
+
+@app.route('/<target>/ind_partitions')
+@title('Ind partitions count')
+@template('list')
+@snail()
+@columns({"index_owner": 'str'
+          , "index_name": 'str'
+          , "count(partition_name) part_count": 'int'
+          , "sum(subpartition_count) subpart_count": 'int'})
+@select("all_ind_partitions group by index_owner, index_name")
+@default_sort("part_count desc")
+@default_filters(("part_count > 1000 or subpart_count > 1000",))
+def get_ind_partitions_count(target):
     return render_page()
 
 

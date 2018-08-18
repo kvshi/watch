@@ -86,3 +86,15 @@ def get_tab_columns(target, owner, table_name):
                                                  , {'owner': owner, 'table_name': table_name}
                                                  , 'many'
                                                  , False)}
+
+
+def ping(target):
+    try:
+        with lock:
+            if not target_pool.get(target):
+                set_ora_pool(target)
+        connection = target_pool[target].acquire()
+        connection.ping()
+        return 0
+    except Error:
+        return -1

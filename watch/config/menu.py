@@ -26,7 +26,8 @@ menu_tree = {'get_user': ['user', []]
                                           , 'get_ts_fragmentation'
                                           , 'get_users'
                                           , 'get_privileges'
-                                          , 'get_too_partitioned'
+                                          , 'get_tab_partitions_count'
+                                          , 'get_ind_partitions_count'
                                           , 'get_modifications']]
              , 'get_query': ['query'
                              , ['get_query_text'
@@ -50,7 +51,11 @@ menu_tree = {'get_user': ['user', []]
                                        , 'wait_for_expiry'
                                        , 'wait_for_uncommitted'
                                        , 'wait_for_queued'
-                                       , 'wait_for_recycled']]
+                                       , 'wait_for_recycled'
+                                       , 'check_size'
+                                       , 'check_resource_usage'
+                                       , 'wait_for_sql_error'
+                                       , 'ping_target']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'
