@@ -73,7 +73,8 @@ def wait_for_status(t):
         for item in [t.parameters['date_column'], t.parameters['status_column']] + t.parameters['info_column']:
             if item not in table_columns.keys():
                 return True, f'{t.parameters["owner"]}.{t.parameters["table"]}.{item} not found.'
-        if table_columns[t.parameters['date_column']] not in ('DATE', 'TIMESTAMP'):
+        if 'DATE' not in table_columns[t.parameters['date_column']] \
+                and 'TIMESTAMP' not in table_columns[t.parameters['date_column']]:
             return True, f'{t.parameters["date_column"]} must be a date or timestamp type.'
 
         status_type = table_columns[t.parameters['status_column']]
@@ -373,7 +374,8 @@ def wait_for_queued(t):
                   " and event not like :ignore_event"
                   " group by sql_id, event, session_id, machine"
                   " having count(1) > :queued_time_sec"
-                , {'queued_time_sec': t.parameters['queued_time_sec']
+                , {'start_date': t.parameters['start_date']
+                    , 'queued_time_sec': t.parameters['queued_time_sec']
                     , 'ignore_event': t.optional.get('ignore_event', '---')}
                 , 'many'
                 , False)

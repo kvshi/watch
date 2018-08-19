@@ -34,6 +34,7 @@ import watch.views.target
 import watch.views.top
 import watch.views.workload
 import watch.views.query
+import watch.views.session
 import watch.views.table
 from watch.ext import *
 

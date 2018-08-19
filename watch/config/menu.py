@@ -35,7 +35,9 @@ menu_tree = {'get_user': ['user', []]
                                 , 'get_query_waits'
                                 , 'get_query_long_ops'
                                 , 'get_query_plan_stats'
-                                , 'get_query_report']]
+                                , 'get_query_report'
+                                , 'notify_if_done']]
+             , 'get_session': ['sid', ['notify_if_inactive']]
              , 'get_table': ['table'
                              , ['get_table_columns'
                                 , 'get_table_indexes'

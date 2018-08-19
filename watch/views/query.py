@@ -1,4 +1,4 @@
-from flask import render_template
+from flask import render_template, redirect, url_for
 from watch import app
 from watch.utils.render_page import render_page
 from watch.utils.decorate_view import *
@@ -13,7 +13,9 @@ import xml.etree.ElementTree as ElementTree
           , "action": 'str'
           , "to_date(first_load_time, 'yyyy-mm-dd/hh24:mi:ss') first_load_time": 'datetime'
           , "to_date(last_load_time, 'yyyy-mm-dd/hh24:mi:ss') last_load_time": 'datetime'
-          , "last_active_time": 'datetime'})
+          , "last_active_time": 'datetime'
+          , "(select max(sid) keep (dense_rank last order by sql_exec_start)"
+            " from v$session where v$session.sql_id = v$sql.sql_id) sid": 'int'})
 @select("v$sql where sql_id = :query")
 def get_query(target, query):
     return render_page()
@@ -118,3 +120,9 @@ def get_query_long_ops(target, query):
 @default_sort("plan_line_id")
 def get_query_plan_stats(target, query):
     return render_page()
+
+
+@app.route('/<target>/Q/<query>/notify_if_done')
+@title('Notify if done')
+def notify_if_done(target, query):
+    return redirect(url_for('wait_for_execution', target=target, sql_id=query))

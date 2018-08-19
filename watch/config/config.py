@@ -145,7 +145,9 @@ USERS = {
   }
 
 # [REQUIRED]
-# List of users, which allowed to shutdown the app server.
+# List of users, which allowed to:
+# - shutdown the app server;
+# - remove other users' tasks.
 ADMIN_GROUP = []
 
 # Now let's try to import settings which you have set in local_config.py

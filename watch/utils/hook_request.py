@@ -37,6 +37,9 @@ def set_template_context():
     g.pct_columns = tuple(i for i, v in enumerate(g.columns) if v.startswith('pct_'))
     g.snail = getattr(f, 'snail', False)
     g.sql_id = g.columns.index('sql_id') if 'sql_id' in g.columns else -1
+    g.sid = g.columns.index('sid') if 'sid' in g.columns else -1
+    if g.sid == -1:
+        g.sid = g.columns.index('session_id') if 'session_id' in g.columns else -1
     g.object_name = g.columns.index('object_name') if 'object_name' in g.columns else -1
     g.object_type = g.columns.index('object_type') if 'object_type' in g.columns else -1
     g.owner = g.columns.index('owner') if 'owner' in g.columns else -1
