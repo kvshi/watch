@@ -178,6 +178,6 @@ def get_ext(target):
 def search(target):
     text = request.args['text']
     if len(text) <= 4 and text.isdigit():
-        return redirect(url_for('get_session_monitor', target=target, filter=f'sid = {text}', do='search'))
+        return redirect(url_for('get_session', target=target, sid=text))
     else:
         return redirect(url_for('get_query', target=target, query=text))

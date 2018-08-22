@@ -4,7 +4,9 @@
     {% for item in info %}
     <tr><td class="attr-name">{{ item[0] }}</td><td>{{ item[1] }}</td></tr>
     {% endfor %}
-    <tr><td class="attr-name">Actions</td><td><a href="/task/reset_all">Reset all tasks</a></td></tr>
+    {% set ns = namespace(error_count=0) %}
+    {% for task in task_pool.values() %}{% if task.state.endswith('error') %}{% set ns.error_count = ns.error_count + 1 %} {% endif %}{% endfor %}
+    <tr><td class="attr-name">Actions</td><td><a href="/task/reset_all">Reset all tasks ({{ ns.error_count }})</a></td></tr>
 </table>
 {% if active_connections %}
 <br>
@@ -28,19 +30,20 @@
 <div>Active tasks:</div>
 {% include 'flashed.html' %}
 <table>
-    <tr><th>id</th><th>Name</th><th>Created</th><th>User</th><th>Target</th><th>Last call</th><th>Period</th><th>Execs</th><th>State</th><th>Parameters</th><th>Action</th></tr>
+    <tr><th>id</th><th>Name</th><th>Created</th><th>Target</th><th>Author</th><th>Recipient</th><th>Last call</th><th>Period</th><th>Execs</th><th>State</th><th>Parameters</th><th>Action</th></tr>
     {% for task in task_pool.values() -%}
     <tr>
-        <td class="{% if task_id == task.uuid %}selected{% endif %}"><a href="/task/browse?id={{ task.uuid }}">...{{ task.uuid[-8:] }}</a></td>
+        <td align="right" class="{% if task_id == task.uuid %}selected{% endif %}"><a href="/task/browse?id={{ task.uuid }}">...{{ task.uuid[-8:] }}</a></td>
         <td>{{ task.name }}</td>
         <td>{{ task.create_date.strftime(config['DATETIME_FORMAT']) }}</td>
-        <td>{{ task.user_name }}</td>
         <td>{{ task.target }}</td>
+        <td>{{ task.user_name }}</td>
+        <td>{% if task.chat_id %}{% if config['BOT_CHAT_LIST'].get(task.chat_id|int, none) %}{{ config['BOT_CHAT_LIST'][task.chat_id|int] }}{% elif config['USERS'][task.user_name][1] == task.chat_id|int %}{{ task.user_name }}{% else %}{{ '?' }}{% endif %}{% endif %}</td>
         <td>{% if task.last_call is not none %}{{ task.last_call.strftime(config['DATETIME_FORMAT']) }}{% endif %}</td>
         <td>{{ task.period }}</td>
         <td align="right">{{ '{:,}'.format(task.execs).replace(',', ' ') }}</td>
         <td>{{ task.state }}</td>
-        <td><a href="/task/browse?id={{ task.uuid }}">{{ task.parameters.values()|join(', ') }}{% if task.optional %}; {{task.optional.values()|join(', ') }}{% endif %}</a></td>
+        <td><a href="/task/browse?id={{ task.uuid }}">{{ task.parameters.values()|join(', ')|truncate(40, True) }}{% if task.optional %}; {{task.optional.values()|join(', ')|truncate(40, True) }}{% endif %}</a></td>
         <td><a href="/task/cancel?id={{ task.uuid }}" onclick="return confirm('The task will be removed. This action cannot be undone.')">cancel</a>{% if task.state.endswith('error') %}, <a href="/task/reset?id={{ task.uuid }}">reset</a>{% endif %}</td>
     </tr>
     {% endfor %}

@@ -2,8 +2,8 @@ from flask import render_template, session
 from watch import app, task_pool, lock
 from watch.utils.decorate_view import *
 from watch.utils.oracle import execute, get_tab_columns, ping
-from watch.utils.parse_args import dlm_str_to_list, upper_values
-from datetime import datetime, timedelta
+from watch.utils.parse_args import dlm_str_to_list, upper_values, get_offset
+from datetime import datetime
 from collections import deque
 from watch.utils.manage_message import t_link
 
@@ -73,9 +73,8 @@ def wait_for_status(t):
         for item in [t.parameters['date_column'], t.parameters['status_column']] + t.parameters['info_column']:
             if item not in table_columns.keys():
                 return True, f'{t.parameters["owner"]}.{t.parameters["table"]}.{item} not found.'
-        if 'DATE' not in table_columns[t.parameters['date_column']] \
-                and 'TIMESTAMP' not in table_columns[t.parameters['date_column']]:
-            return True, f'{t.parameters["date_column"]} must be a date or timestamp type.'
+        if 'DATE' not in table_columns[t.parameters['date_column']]:
+            return True, f'{t.parameters["date_column"]} must be a date type.'
 
         status_type = table_columns[t.parameters['status_column']]
         if status_type != 'NUMBER' and 'CHAR' not in status_type:
@@ -121,6 +120,7 @@ def wait_for_status(t):
         else:
             info_column_list.append(f"to_char({c})")
     info_column_sql_text = ' || \' \' || '.join(info_column_list)
+    filter_column = t.optional.get('filter_column', '\'1\'')
     r = execute(t.target
                 , f"select to_char({t.parameters['date_column']}, 'hh24:mi:ss')"
                   f", {info_column_sql_text}"
@@ -131,8 +131,7 @@ def wait_for_status(t):
                   f" and {'upper' if t.data['status_type'] != 'NUMBER' else ''}"
                   f"({t.parameters['status_column']})"
                   f" in ({':' + ', :'.join(str(i) for i in range(1, len(t.data['status_values']) + 1))})"
-                  f" and to_char({t.optional.get('filter_column', '1')})"
-                  f" = :filter_value"
+                  f" and {filter_column} = :filter_value"
                 , p
                 , 'many'
                 , False)
@@ -153,6 +152,7 @@ def wait_for_status(t):
 @template('task')
 @parameters({'exec_time_min': ' >= int'
              , 'temp_usage_gb': ' >= int'})
+@optional({'user_name': ' like str'})
 @period('5m')
 @command('/heavy')
 def wait_for_heavy(t):
@@ -166,11 +166,12 @@ def wait_for_heavy(t):
                   " left join v$sort_usage u on s.saddr = u.session_addr"
                   " join v$parameter p on p.name = 'db_block_size'"
                   " join v$sql_monitor m on m.sid = s.sid and m.session_serial# = s.serial#"
-                  " where m.status = 'EXECUTING'"
+                  " where m.status = 'EXECUTING'{}"
                   " group by s.username, m.sql_id, round(elapsed_time / 60000000), s.sid,"
                   " m.sql_id || to_char(m.sql_exec_id) || to_char(m.sql_exec_start, 'yyyymmddhh24miss'))"
                   " where exec_time_min >= :exec_time_min or temp_usage_gb >= :temp_usage_gb"
-                , t.parameters
+                  .format(' and s.username like :user_name' if t.optional.get('user_name', None) else '')
+                , {**t.parameters, **t.optional}
                 , 'many'
                 , False)
     if not r:
@@ -362,11 +363,7 @@ def wait_for_session(t):
 def wait_for_queued(t):
     pt = t.period[-1:]
     pv = t.period[:-1]
-    t.parameters['start_date'] = datetime.now() - timedelta(weeks=int(pv) if pt == 'w' else 0
-                                                            , days=int(pv) if pt == 'd' else 0
-                                                            , hours=int(pv) if pt == 'h' else 0
-                                                            , minutes=int(pv) if pt == 'm' else 0
-                                                            , seconds=int(pv) if pt == 's' else 0)
+    t.parameters['start_date'] = datetime.now() - get_offset(pv, pt)
     r = execute(t.target
                 , "select nvl(sql_id, 'Unknown sql'), event, session_id, machine, count(1) waits"
                   " from v$active_session_history"
@@ -477,6 +474,7 @@ def check_resource_usage(t):
 @app.route('/<target>/wait_for_sql_error')
 @title('Wait for SQL error')
 @template('task')
+@optional({'ignore_user': ' like str'})
 @period('5m')
 def wait_for_sql_error(t):
     if not t.data:
@@ -485,22 +483,24 @@ def wait_for_sql_error(t):
     r = execute(t.target
                 , "select username, sql_id, sid, error_message"
                   " from v$sql_monitor"
-                  " where status = 'DONE (ERROR)' and error_number <> 1013"  # user requested cancel of an operation
-                  " and sql_exec_start between :start_date and :end_date"
-                , {'start_date': t.data['start_date'], 'end_date': end_date}
+                  " where status = 'DONE (ERROR)' and error_number not in (1013, 28)"  # cancelled, killed
+                  " and sql_exec_start between :start_date and :end_date and username not like :user_name"
+                , {'start_date': t.data['start_date']
+                   , 'end_date': end_date
+                   , 'user_name': t.optional.get('ignore_user', '---')}
                 , 'many'
                 , False)
     t.data['start_date'] = end_date
     if not r:
         return False, ''
     else:
-        return False, '\n'.join('{} ({}, {}) on {} is failed({})'
+        return False, '\n'.join('{} ({}, {}) on {} is failed ({}).'
                                 .format(t_link(f'{t.target}/Q/{item[1]}', item[1])
                                         , item[2]
                                         , item[0]
                                         , t.target
                                         , item[3].replace('\n', ' '))
-                                for item in r[:10]) + '' if len(r) <= 10 else f'\n and {str(len(r) - 10)} more...'
+                                for item in r[:10]) + ('' if len(r) <= 10 else f'\n and {str(len(r) - 10)} more...')
 
 
 @app.route('/<target>/ping_target')

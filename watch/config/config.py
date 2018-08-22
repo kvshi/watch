@@ -97,6 +97,8 @@ BOT_POLLING_FREQ_SEC = 0
 #     7) The bot will show you group id.
 BOT_CHAT_LIST = {}
 
+# Don't send anything, ignore notifying options for tasks. Turn WORKER_FREQ_SEC to 0 to stop task processing.
+MUTE_MESSAGES = False
 
 # Pygal charts configuration. See the official Pygal docs.
 CHART_CONFIG = {'style': Style(font_family='Arial'

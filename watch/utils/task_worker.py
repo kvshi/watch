@@ -1,9 +1,10 @@
 from cx_Oracle import DatabaseError, OperationalError
 from watch import app, task_pool, notification_pool, lock
 from watch.utils.chat_bot import send_message
+from watch.utils.parse_args import get_offset
 import threading
 from time import sleep
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 class Worker(threading.Thread):
@@ -22,11 +23,7 @@ class Worker(threading.Thread):
                     if task.last_call:
                         pt = task.period[-1:]
                         pv = task.period[:-1]
-                        next_call = task.last_call + timedelta(weeks=int(pv) if pt == 'w' else 0
-                                                               , days=int(pv) if pt == 'd' else 0
-                                                               , hours=int(pv) if pt == 'h' else 0
-                                                               , minutes=int(pv) if pt == 'm' else 0
-                                                               , seconds=int(pv) if pt == 's' else 0)
+                        next_call = task.last_call + get_offset(pv, pt)
                         if next_call > datetime.now():
                             continue
                     task.state = 'run'
@@ -39,7 +36,7 @@ class Worker(threading.Thread):
                                                       , task.name
                                                       , ', '.join(str(v) for v in task.parameters.values())
                                                       , message))
-                        if task.chat_id:
+                        if task.chat_id and not app.config['MUTE_MESSAGES']:
                             message_parameters = {'chat_id': task.chat_id
                                                   , 'text': message
                                                   , 'parse_mode': 'HTML'}

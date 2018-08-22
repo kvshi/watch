@@ -2,6 +2,15 @@ from watch import app
 from datetime import datetime, timedelta
 
 
+def get_offset(pv, pt):
+    i_pv = int(pv)
+    return timedelta(weeks=i_pv if pt == 'w' else 0
+                     , days=i_pv if pt == 'd' else 0
+                     , hours=i_pv if pt == 'h' else 0
+                     , minutes=i_pv if pt == 'm' else 0
+                     , seconds=i_pv if pt == 's' else 0)
+
+
 def parse_filter_expr(source, columns):
     comparisons = ('>=', '<=', '<>', '!=', '>', '<', '=', 'is not null', 'is null', 'not like', 'like')
     booleans = ('and', 'or')
@@ -63,16 +72,7 @@ def parse_filter_expr(source, columns):
                 if not value.isdigit():
                     return source_len - len(source) + 1, None, None
                 try:
-                    weeks = int(value) if directive == 'w' else 0
-                    days = int(value) if directive == 'd' else 0
-                    hours = int(value) if directive == 'h' else 0
-                    minutes = int(value) if directive == 'm' else 0
-                    seconds = int(value) if directive == 's' else 0
-                    values.append(datetime.now() - timedelta(weeks=weeks
-                                                             , days=days
-                                                             , hours=hours
-                                                             , minutes=minutes
-                                                             , seconds=seconds))
+                    values.append(datetime.now() - get_offset(value, directive))
                 except (TypeError, ValueError, OverflowError):
                     return source_len - len(source) + 1, None, None
 
@@ -154,11 +154,7 @@ def parse_parameters(source, required, optional=False):
                     if not value.isdigit():
                         return k, None
                     try:
-                        required_values[k] = datetime.now() - timedelta(weeks=int(value) if directive == 'w' else 0
-                                                                        , days=int(value) if directive == 'd' else 0
-                                                                        , hours=int(value) if directive == 'h' else 0
-                                                                        , minutes=int(value) if directive == 'm' else 0
-                                                                        , seconds=int(value) if directive == 's' else 0)
+                        required_values[k] = datetime.now() - get_offset(value, directive)
                     except (TypeError, ValueError, OverflowError):
                         return k, None
                 else:
