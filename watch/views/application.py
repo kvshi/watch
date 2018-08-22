@@ -1,5 +1,6 @@
 from flask import session, request, redirect, url_for, render_template, flash, send_file, abort
-from watch import app, active_connections, target_pool, notification_pool, worker, task_pool, bot, lock, startup_time
+from watch import app, active_connections, target_pool, notification_pool\
+    , worker, task_pool, bot, lock, startup_time, unsent_pool
 from watch.utils.decorate_view import *
 from watch.utils.manage_task import cancel_task, reset_task, store_tasks
 from cx_Oracle import clientversion, DatabaseError, OperationalError
@@ -153,9 +154,8 @@ def get_error_log():
 @app.route('/notifications')
 @title('Tasks notifications')
 @columns({'time': 'datetime'
-          , 'user': 'str'
+          , 'uuid': 'str'
           , 'task': 'str'
-          , 'parameters': 'str'
           , 'message': 'str'})
 def get_notifications():
     with lock:
@@ -164,6 +164,22 @@ def get_notifications():
                             , text=f'{task_count} tasks are active. '
                                    f'Only last {app.config["MAX_KEPT_NOTIFICATIONS"]} task messages will be kept.'
                             , data=notification_pool)
+    return t
+
+
+@app.route('/unsent')
+@title('Unsent messages')
+@columns({'time': 'datetime'
+          , 'uuid': 'str'
+          , 'task': 'str'
+          , 'chat_id': 'str'
+          , 'reply_to': 'str'
+          , 'message': 'str'})
+def get_unsent_messages():
+    with lock:
+        t = render_template('static_list.html'
+                            , text=f'These task messages were not sent due to network problems.'
+                            , data=unsent_pool)
     return t
 
 

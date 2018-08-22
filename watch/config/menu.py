@@ -61,6 +61,7 @@ menu_tree = {'get_user': ['user', []]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'
+                              , 'get_unsent_messages'
                               , 'get_error_log'
                               , 'stop_server']]
              , 'logout': ['user', []]}

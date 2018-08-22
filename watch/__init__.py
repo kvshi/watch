@@ -20,6 +20,7 @@ active_connections = {}
 from watch.utils.manage_task import restore_tasks
 task_pool = restore_tasks()
 notification_pool = deque(maxlen=app.config['MAX_KEPT_NOTIFICATIONS'])
+unsent_pool = deque(maxlen=app.config['MAX_KEPT_NOTIFICATIONS'])
 
 from watch.utils.task_worker import Worker
 worker = Worker()

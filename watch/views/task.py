@@ -152,7 +152,8 @@ def wait_for_status(t):
 @template('task')
 @parameters({'exec_time_min': ' >= int'
              , 'temp_usage_gb': ' >= int'})
-@optional({'user_name': ' like str'})
+@optional({'user_name': ' like str'
+           , 'ignore_user': ' like str'})
 @period('5m')
 @command('/heavy')
 def wait_for_heavy(t):
@@ -166,11 +167,12 @@ def wait_for_heavy(t):
                   " left join v$sort_usage u on s.saddr = u.session_addr"
                   " join v$parameter p on p.name = 'db_block_size'"
                   " join v$sql_monitor m on m.sid = s.sid and m.session_serial# = s.serial#"
-                  " where m.status = 'EXECUTING'{}"
+                  " where m.status = 'EXECUTING'{}{}"
                   " group by s.username, m.sql_id, round(elapsed_time / 60000000), s.sid,"
                   " m.sql_id || to_char(m.sql_exec_id) || to_char(m.sql_exec_start, 'yyyymmddhh24miss'))"
                   " where exec_time_min >= :exec_time_min or temp_usage_gb >= :temp_usage_gb"
-                  .format(' and s.username like :user_name' if t.optional.get('user_name', None) else '')
+                  .format(' and s.username like :user_name' if t.optional.get('user_name', None) else ''
+                          , ' and s.username not like :ignore_user' if t.optional.get('ignore_user', None) else '')
                 , {**t.parameters, **t.optional}
                 , 'many'
                 , False)
