@@ -113,7 +113,7 @@ CHART_CONFIG = {'style': Style(font_family='Arial'
                                , plot_background='#FFFFFF')
                 , 'explicit_size': True
                 , 'height': 400
-                , 'width': 1100
+                , 'width': 1000
                 , 'margin': 4
                 , 'show_x_guides': True
                 , 'tooltip_border_radius': 4

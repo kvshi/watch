@@ -39,3 +39,7 @@ def t_link(url_part, text):
 
 def t_pre(text):
     return f'<pre>{t_esc(text)}</pre>'
+
+
+def t_italic(text):
+    return f'<i>{t_esc(text)}</i>'

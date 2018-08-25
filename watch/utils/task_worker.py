@@ -2,6 +2,7 @@ from cx_Oracle import DatabaseError, OperationalError
 from watch import app, task_pool, notification_pool, lock, unsent_pool
 from watch.utils.chat_bot import send_message
 from watch.utils.parse_args import get_offset
+from watch.utils.manage_message import t_italic
 import threading
 from time import sleep
 from datetime import datetime
@@ -63,7 +64,10 @@ class Worker(threading.Thread):
                     if r == 0 and message and not app.config['MUTE_MESSAGES']:
                         while r == 0 and len(unsent_pool) > 0:
                             m = unsent_pool.popleft()
-                            r = prepare_and_send(m[3], m[4], m[5])
+                            r = prepare_and_send(m[3]
+                                                 , m[4]
+                                                 , f'{t_italic("This message was postponed due to network problem:")}'
+                                                   f'\n{m[5]}')
                             if r == 0 and task_pool.get(m[1], None):
                                 task_pool[m[1]].state = 'wait'
                             if r != 0:

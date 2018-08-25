@@ -16,6 +16,9 @@
     <label>Session id
         <input type="text" class="sql-text" name="session_id" size="14" placeholder='= int' value="{{ request.args.get('session_id', '') }}">
     </label>
+    <label>User name
+        <input type="text" class="sql-text" name="user_name" size="14" placeholder='like str' value="{{ request.args.get('user_name', '') }}">
+    </label>
     <label>SQL id
         <input type="text" class="sql-text" name="sql_id" size="14" placeholder='= str' value="{{ request.args.get('sql_id', '') }}">
     </label>
@@ -28,8 +31,15 @@
 </form>
 {% include 'flashed.html' %}
 <div>
+<span>
 {% if top_activity is defined %}
     <embed type="image/svg+xml" src="{{ top_activity }}" />
+{% endif %}
+</span>
+{% if top_waits is defined %}
+<span>
+    <embed type="image/svg+xml" src="{{ top_waits }}" />
+</span>
 {% endif %}
 </div>
 <div>
@@ -38,14 +48,13 @@
     <embed type="image/svg+xml" src="{{ top_sql }}" />
 </span>
 {% endif %}
-{% if top_objects is defined %}
+{% if top_sessions is defined and top_sessions is not none %}
+<span>
+    <embed type="image/svg+xml" src="{{ top_sessions }}" />
+</span>
+{% endif %} {% if top_objects is defined %}
 <span>
     <embed type="image/svg+xml" src="{{ top_objects }}" />
-</span>
-{% endif %}
-{% if top_waits is defined %}
-<span>
-    <embed type="image/svg+xml" src="{{ top_waits }}" />
 </span>
 {% endif %}
 </div>

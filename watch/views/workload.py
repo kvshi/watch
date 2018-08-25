@@ -92,7 +92,7 @@ def get_ash_report(target):
     if not r:
         flash('Not found')
         return render_template('ash.html', data=None)
-    root = ElementTree.fromstring(''.join(item[0] for item in r if item[0])).find('./body')
+    root = ElementTree.fromstring(''.join(item[0].replace('<<', '&lt;&lt;') for item in r if item[0])).find('./body')
     root.find('./h1').clear()
     for item in root:
         item.attrib.pop('border', None)

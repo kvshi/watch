@@ -60,8 +60,8 @@ class Bot(threading.Thread):
                                 , user_name=user_name
                                 , target=target
                                 , parameters=parameters
-                                , chat_id=update['message']['chat']['id']
-                                , reply_to_message_id=update['message']['message_id'])
+                                , chat_id=str(update['message']['chat']['id'])
+                                , reply_to_message_id=str(update['message']['message_id']))
                     task_pool[task.uuid] = task
                     send_message({'chat_id': update['message']['chat']['id']
                                   , 'text': '{} added.'.format(t_link(f'adm?task_id={task.uuid}', 'Task'))
