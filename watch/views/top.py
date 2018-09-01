@@ -108,7 +108,7 @@ def get_top_activity(target):
     series = {k[1]: [] for k in sorted(set((item[3], item[2]) for item in r if item[0] == 1), key=lambda x: x[0])}
     p = deepcopy(app.config['CHART_CONFIG'])
     p['style'].colors = tuple(colors[wait_class] for wait_class in series.keys())
-    p['height'] = 220
+    p['height'] = 10 * 22
     top_activity = StackedLine(**p, legend_at_bottom=True, legend_at_bottom_columns=len(series.keys()))
     top_activity.fill = True
     top_activity.x_labels = sorted(set(item[1] for item in r if item[0] == 1))
@@ -128,6 +128,7 @@ def get_top_activity(target):
     top_sql.show_x_labels = False
     top_sql.x_labels = sorted(set(item[1] for item in r if item[0] == 2)
                               , key=lambda x: sum(tuple(item[4] for item in r if item[0] == 2 and item[1] == x)))
+    top_sql.height = len(top_sql.x_labels) * 22
     series = {k[1]: [] for k in sorted(set((item[3], item[2]) for item in r if item[0] == 2), key=lambda x: x[0])}
     for label in top_sql.x_labels:
         for serie in series.keys():
@@ -150,6 +151,7 @@ def get_top_activity(target):
     top_objects.x_labels = sorted(set(item[1] for item in r if item[0] == 3)
                                   , key=lambda x: sum(tuple(item[4] for item in r if item[0] == 3 and item[1] == x)))
     series = {k[1]: [] for k in sorted(set((item[3], item[2]) for item in r if item[0] == 3), key=lambda x: x[0])}
+    top_objects.height = len(top_objects.x_labels) * 22
     for label in top_objects.x_labels:
         for serie in series.keys():
             v = tuple(item[4] for item in r if item[0] == 3 and item[1] == label and item[2] == serie)
@@ -174,6 +176,7 @@ def get_top_activity(target):
     top_sessions.show_x_labels = False
     top_sessions.x_labels = sorted(set(item[1] for item in r if item[0] == 6)
                                    , key=lambda x: sum(tuple(item[4] for item in r if item[0] == 6 and item[1] == x)))
+    top_sessions.height = len(top_sessions.x_labels) * 22
     series = {k[1]: [] for k in sorted(set((item[3], item[2]) for item in r if item[0] == 6), key=lambda x: x[0])}
     for label in top_sessions.x_labels:
         for serie in series.keys():

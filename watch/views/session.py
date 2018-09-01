@@ -30,7 +30,9 @@ from watch.utils.decorate_view import *
           , "wait_class": 'str'
           , "seconds_in_wait": 'int'
           , "state": 'str'
-          })
+          , "blocking_session": 'int'
+          , "blocking_session_status": 'str'
+          , "final_blocking_session": 'int'})
 @select("v$session where sid = :sid")
 def get_session(target, sid):
     return render_page()
