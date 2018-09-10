@@ -78,6 +78,7 @@ Segment usage | dba_segments
 Tabspace usage | dba_free_space
 Tabspace fragmentation | dba_segments
 Users | dba_users
+Synonyms | dba_synonyms
 Privileges | dba_tab_privs
 Tab partition count | Helps to find extremely partitioned tables.
 Ind partition count | Helps to find extremely partitioned indexes.
@@ -112,6 +113,8 @@ Check segment size | Notify when segment (table, index, ...) size has reached sp
 Check resource usage | Notify when some of server resource usage reached specified threshold
 Wait for SQL error | Notify if some query has failed. It is based on sql monitor, but a trigger on servererror is much better.
 Ping target | Notify if ping to the target has failed.
+
+All functions were tested on Oracle 11.2 & 12.1 (single instance mode).
 
 ### Making your own view
 There is two ways to add your code to the app:

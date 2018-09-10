@@ -438,3 +438,17 @@ def get_ts_fragmentation(target):
 @default_sort("used_ublk desc")
 def get_undo_usage(target):
     return render_page()
+
+
+@app.route('/<target>/synonyms')
+@title('Synonyms')
+@template('list')
+@select("dba_synonyms")
+@columns({"owner": 'str'
+         , "synonym_name": 'str'
+         , "table_owner": 'str'
+         , "table_name": 'str'
+         , "db_link": 'str'})
+@default_filters(("table_owner not like '%SYS%'",))
+def get_synonyms(target):
+    return render_page()

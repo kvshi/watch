@@ -25,6 +25,7 @@ menu_tree = {'get_user': ['user', []]
                                           , 'get_tablespace_usage'
                                           , 'get_ts_fragmentation'
                                           , 'get_users'
+                                          , 'get_synonyms'
                                           , 'get_privileges'
                                           , 'get_tab_partitions_count'
                                           , 'get_ind_partitions_count'

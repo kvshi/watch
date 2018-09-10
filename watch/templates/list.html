@@ -2,6 +2,11 @@
 {% block content %}
 {% block parameters %}
 <form method="get">
+    {% for k, v in g.parameters.items() %}
+    <label>{% if loop.index == 1 %}Required{% endif %}
+        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
+    </label>
+    {% endfor %}
     <label >Filter
         <input type="text" class="sql-text" name="filter"
                value="{%- if 'filter' in request.args -%}
@@ -10,11 +15,6 @@
                           {% if g.default_filters|length > 0 %}{{ g.default_filters[0] }}{% endif %}
                       {%- endif -%}" size="70" autofocus>
     </label>
-    {% for k, v in g.parameters.items() %}
-    <label>{% if loop.index == 1 %}Required{% endif %}
-        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
-    </label>
-    {% endfor %}
     <label>Sort
         <input type="text" class="sql-text" name="sort"
                value="{% if 'sort' in request.args %}{{ request.args['sort'] }}{% else %}{{ g.default_sort }}{% endif %}" size="30">

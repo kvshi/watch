@@ -141,7 +141,8 @@ def wait_for_status(t):
     else:
         message_text = f'{t.parameters["table"]} ({t.target}):\n'
         max_count = 10
-        message_text += '\n'.join(f'{item[0]} {item[1]}' for item in r[:max_count - 1])
+        message_text += '\n'.join(f'{item[0]} {item[1]}'.replace('<', '&lt;').replace('>', '&gt;')
+                                  for item in r[:max_count - 1])
         if len(r) > max_count:
             message_text += f'\n and {str(len(r) - max_count)} more...'
     return False, message_text
