@@ -487,7 +487,7 @@ def wait_for_sql_error(t):
                 , "select username, sql_id, sid, error_message"
                   " from v$sql_monitor"
                   " where status = 'DONE (ERROR)' and error_number not in (1013, 28)"  # cancelled, killed
-                  " and sql_exec_start between :start_date and :end_date and username not like :user_name"
+                  " and last_refresh_time between :start_date and :end_date and username not like :user_name"
                 , {'start_date': t.data['start_date']
                    , 'end_date': end_date
                    , 'user_name': t.optional.get('ignore_user', '---')}

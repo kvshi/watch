@@ -2,6 +2,7 @@ from flask import session, g, request, redirect, url_for, abort, flash, render_t
 from watch import title, columns, worker, task_pool
 from watch.utils.parse_args import *
 from watch.utils.manage_task import Task
+from time import time
 
 
 def validate_request():
@@ -25,6 +26,7 @@ def validate_request():
 
 
 def set_template_context():
+    g.request_time = time()
     f = app.view_functions[request.endpoint]
     g.title = title
     g.default_filters = getattr(f, 'default_filters', ())

@@ -20,6 +20,7 @@
             </div>
             {% if 'target' in request.view_args %}
             <div>
+                <div class="page-stat-hint">{{ get_page_stats }}</div>
                 <form method="get" action="{{ url_for('search', target=request.view_args['target']) }}">
                     <input type="search" name="text" minlength=3 maxlength=13 placeholder="Search sql or session" required>
                 </form>

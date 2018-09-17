@@ -6,7 +6,7 @@
     <iframe srcdoc="{{ data }}">
     </iframe>
     {% elif g.content == 'text' %}
-    <pre class="sql-text">
+    <pre class="sql-full-text">
         {% if data is string -%}
             {{data}}
         {% else %}

@@ -1,12 +1,12 @@
-from flask import Flask
+from flask import Flask, g
 import logging
 from logging.handlers import RotatingFileHandler
 from os import path, makedirs
 from collections import deque
 from threading import RLock
-
 from urllib.request import ProxyHandler, build_opener, install_opener
 from datetime import datetime
+from time import time
 
 app = Flask(__name__)
 app.config.from_pyfile(path.join(path.dirname(__file__), 'config', 'config.py'))
@@ -27,6 +27,12 @@ worker = Worker()
 
 from watch.utils.chat_bot import Bot
 bot = Bot()
+
+
+@app.context_processor
+def get_page_stats():
+    return {'get_page_stats': f'{datetime.now().strftime("%H:%M:%S")}, {(time() - g.request_time):.3f} secs'}
+
 
 import watch.views.error
 import watch.views.application

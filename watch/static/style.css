@@ -137,6 +137,11 @@ iframe {
     font-family: Consolas, Monaco, monospace;
 }
 
+.sql-full-text {
+    font-family: Consolas, Monaco, monospace;
+    white-space: pre-wrap;
+}
+
 .sql-hint {
     display:inline-block;
     font-size: 8pt;
@@ -166,3 +171,8 @@ iframe {
     color: darkgray;
 }
 
+.page-stat-hint {
+    text-align: right;
+    font-size: 8pt;
+    color: darkgray;
+}

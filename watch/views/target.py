@@ -57,8 +57,9 @@ def get_target_objects(target):
          , "round(concurrency_wait_time / 1000000) concurrency_secs": 'int'
           # , "cluster_wait_time": 'int'
          , "round(user_io_wait_time / 1000000) user_io_secs": 'int'
-         , "lpad(sql_text, 32) sql_text": 'str'})
-@default_filters(("status = 'EXECUTING'",))
+         , "lpad(sql_text, 32) sql_text": 'str'
+         , "error_message msg": 'str'})
+@default_filters(("status = 'EXECUTING'", "msg is not null"))
 @default_sort("sql_exec_start desc")
 def get_sql_monitor(target):
     return render_page()
