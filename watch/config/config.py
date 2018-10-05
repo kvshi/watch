@@ -47,11 +47,12 @@ DATETIME_FORMAT = '%d.%m.%Y %H:%M:%S'
 # The main menu structure. Can be imported from other source.
 MENU_TREE = menu_tree
 
-# Logger params.
+# Logger params
 LOG_MAX_BYTES = 1024 * 1024
 LOG_BACKUP_COUNT = 3
 ERROR_LOG_NAME = 'error.log'
 ACCESS_LOG_NAME = 'access.log'
+ENABLE_ACCESS_LOG = False
 
 # Background task worker tries to process all active tasks, then sleep for this period (seconds).
 # 0 value means that the worker will not be started. So you can turn it off if you are not going to create tasks.
@@ -116,9 +117,10 @@ CHART_CONFIG = {'style': Style(font_family='Arial'
                 , 'width': 1000
                 , 'margin': 4
                 , 'show_x_guides': True
-                , 'tooltip_border_radius': 4
+                , 'tooltip_border_radius': 2
                 , 'dots_size': 2
-                , 'stroke_style': {'width': 2}}
+                , 'stroke_style': {'width': 1}}
+                
 
 # [REQUIRED]
 # Here is our targets. Each target describes an Oracle DB connection.

@@ -145,10 +145,23 @@ def stop_server():
 @app.route('/error_log')
 @title('View error log')
 def get_error_log():
+    if session['user_name'] not in app.config['ADMIN_GROUP']:
+        abort(403)
     file = path.join(path.dirname(path.dirname(path.abspath(__file__))), 'logs', app.config['ERROR_LOG_NAME'])
     if not path.exists(file):
         abort(404)
-    return send_file(file, mimetype='text/plain')
+    return send_file(file, mimetype='text/plain', cache_timeout=0)
+
+
+@app.route('/access_log')
+@title('View access log')
+def get_access_log():
+    if session['user_name'] not in app.config['ADMIN_GROUP']:
+        abort(403)
+    file = path.join(path.dirname(path.dirname(path.abspath(__file__))), 'logs', app.config['ACCESS_LOG_NAME'])
+    if not path.exists(file):
+        abort(404)
+    return send_file(file, mimetype='text/plain', cache_timeout=0)
 
 
 @app.route('/notifications')

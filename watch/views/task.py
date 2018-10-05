@@ -24,6 +24,8 @@ def get_task(target):
 @period('1m')
 @command('/wait')
 def wait_for_execution(t):
+    """Note that a query started manually from IDE will stay "executing" until you fetch all it's rows.""" \
+       """ In such case "Wait for session" can be helpful."""
     if not t.data:
         e = execute(t.target
                     , "select max(sql_id) sql_id, max(sql_exec_id) exec_id, max(sql_exec_start) sql_exec_start"
@@ -336,6 +338,7 @@ def wait_for_ts(t):
 @period('1m')
 @command('/waits')
 def wait_for_session(t):
+    """Be sure to choose the main session if your query started in parallel mode."""
     if not t.data:
         e = execute(t.target
                     , "select sid, status from v$session where sid = :sid"
@@ -480,13 +483,15 @@ def check_resource_usage(t):
 @optional({'ignore_user': ' like str'})
 @period('5m')
 def wait_for_sql_error(t):
+    """This task shows sql errors, stored in sql_monitor cache. Errors, displaced from the cache, will be lost.""" \
+       """ A good approach is creating a trigger "after servererror"."""
     if not t.data:
         t.data = {'start_date': t.create_date}
     end_date = datetime.now()
     r = execute(t.target
                 , "select username, sql_id, sid, error_message"
                   " from v$sql_monitor"
-                  " where status = 'DONE (ERROR)' and error_number not in (1013, 28)"  # cancelled, killed
+                  " where status = 'DONE (ERROR)' and error_number not in (1013, 28, 604)"  # cancel, kill, recursive
                   " and last_refresh_time between :start_date and :end_date and username not like :user_name"
                 , {'start_date': t.data['start_date']
                    , 'end_date': end_date

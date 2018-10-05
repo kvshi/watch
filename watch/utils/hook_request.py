@@ -6,6 +6,7 @@ from time import time
 
 
 def validate_request():
+    app.logger.info(f"{session.get('user_name', 'unknown')} {' '.join(request.access_route)} {request.full_path}")
     if 'favicon.ico' in request.url or 'apple-touch-icon' in request.url:
         return 'not today', 404
     elif not request.endpoint:
@@ -29,6 +30,7 @@ def set_template_context():
     g.request_time = time()
     f = app.view_functions[request.endpoint]
     g.title = title
+    g.view_doc = f.__doc__
     g.default_filters = getattr(f, 'default_filters', ())
     g.default_sort = getattr(f, 'default_sort', '')
     g.columns = list(columns[request.endpoint].keys()) if request.endpoint in columns.keys() else []

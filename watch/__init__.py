@@ -58,14 +58,23 @@ app.before_request(set_template_context)
 app.before_request(render_form)
 
 makedirs(path.join(path.dirname(__file__), 'logs'), exist_ok=True)
-log_handler = RotatingFileHandler(path.join(path.dirname(__file__), 'logs', app.config['ERROR_LOG_NAME'])
-                                  , maxBytes=app.config['LOG_MAX_BYTES']
-                                  , backupCount=app.config['LOG_BACKUP_COUNT']
-                                  , encoding='utf-8')
-log_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'
-                                           , app.config['DATETIME_FORMAT']))
-log_handler.setLevel(logging.ERROR)
-app.logger.addHandler(log_handler)
+error_log_handler = RotatingFileHandler(path.join(path.dirname(__file__), 'logs', app.config['ERROR_LOG_NAME'])
+                                        , maxBytes=app.config['LOG_MAX_BYTES']
+                                        , backupCount=app.config['LOG_BACKUP_COUNT']
+                                        , encoding='utf-8')
+error_log_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s', app.config['DATETIME_FORMAT']))
+error_log_handler.setLevel(logging.ERROR)
+app.logger.addHandler(error_log_handler)
+
+if app.config['ENABLE_ACCESS_LOG']:
+    logging.basicConfig(level=logging.INFO)
+    access_log_handler = RotatingFileHandler(path.join(path.dirname(__file__), 'logs', app.config['ACCESS_LOG_NAME'])
+                                             , maxBytes=app.config['LOG_MAX_BYTES']
+                                             , backupCount=app.config['LOG_BACKUP_COUNT']
+                                             , encoding='utf-8')
+    access_log_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s', app.config['DATETIME_FORMAT']))
+    access_log_handler.setLevel(logging.INFO)
+    app.logger.addHandler(access_log_handler)
 
 if app.config['BOT_PROXY']:
     install_opener(build_opener(ProxyHandler(app.config['BOT_PROXY'])))

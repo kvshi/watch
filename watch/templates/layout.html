@@ -47,6 +47,7 @@
                         <span class="caption-sep"> / </span>{{ item }}
                     {%- endfor -%}
                 </div>
+                {% if g.view_doc %}<div>{{ g.view_doc }}</div><br>{% endif %}
 {% block content %}
 {% if text is defined %}
                 <div>{{ text }}</div>

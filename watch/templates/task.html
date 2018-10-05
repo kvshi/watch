@@ -6,8 +6,8 @@
         <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
     </label>
     {% endfor %}
+    {% if g.parameters and g.optional %}<br>{% endif %}
     {% if g.optional %}
-    <br>
     {% for k, v in g.optional.items() %}
     <label>{% if loop.index == 1 %}Optional{% endif %}
         <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
