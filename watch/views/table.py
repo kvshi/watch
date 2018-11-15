@@ -1,4 +1,4 @@
-from flask import render_template, request, flash
+from flask import render_template, request, flash, abort
 from watch import app
 from watch.utils.decorate_view import *
 from watch.utils.render_page import render_page
@@ -139,3 +139,27 @@ def get_table_indexes(target, owner, table):
         " where table_owner = :owner and table_name = :p_table")
 def get_table_partitions(target, owner, table):
     return render_page()
+
+
+@app.route('/<target>/T/<owner>/<table>/insert_from_select')
+@title('Insert from select')
+def get_insert_from_select(target, owner, table):
+    params = {'owner': owner, 'p_table': table}
+    r = execute(target
+                , "select count(table_name) from all_tables"
+                  " where owner = :owner and table_name = :p_table"
+                , params
+                , 'one')
+    if r[0] != 1:
+        abort(404)
+    column_list = execute(target
+                          , "select column_name from all_tab_cols"
+                            " where owner = :owner and table_name = :p_table and virtual_column = 'NO'"
+                            " order by column_id"
+                          , params)
+    column_string_list = '\n     , '.join([i[0] for i in column_list])
+    return render_template('layout.html', formatted_text=f"INSERT /*+ APPEND */ INTO {owner}.{table}\n"
+                                                         f"      ({column_string_list})\n"
+                                                         f"SELECT {column_string_list}\n"
+                                                         f"FROM ???.{table};\n"
+                                                         f"COMMIT;")

@@ -44,7 +44,7 @@ class Task:
                 , self.optional]
 
     def __str__(self):
-        return pformat(self.__dict__, width=160)
+        return pformat(self.__dict__, width=160).replace('\'', '')
 
 
 def cancel_task(task_pool, uuid):

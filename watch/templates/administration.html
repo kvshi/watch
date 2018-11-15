@@ -6,7 +6,12 @@
     {% endfor %}
     {% set ns = namespace(error_count=0) %}
     {% for task in task_pool.values() %}{% if task.state.endswith('error') %}{% set ns.error_count = ns.error_count + 1 %} {% endif %}{% endfor %}
-    <tr><td class="attr-name">Actions</td><td><a href="/task/reset_all">Reset all tasks ({{ ns.error_count }})</a></td></tr>
+    <tr>
+        <td class="attr-name">Actions</td>
+        <td>
+            <a href="/task/reset_all">Reset all tasks ({{ ns.error_count }}); </a>
+            <a href="/stop_server" onclick="return confirm('Sure?')">Shutdown server;</a></td>
+    </tr>
 </table>
 {% if active_connections %}
 <br>

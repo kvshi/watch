@@ -17,7 +17,7 @@ def send_message(parameters):
                 return -1
         return 0
     except Exception as e:
-        app.logger.error(e, exc_info=True)
+        app.logger.error(f'messaging error: {e}')
         return -1
 
 

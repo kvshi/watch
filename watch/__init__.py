@@ -31,7 +31,8 @@ bot = Bot()
 
 @app.context_processor
 def get_page_stats():
-    return {'get_page_stats': f'{datetime.now().strftime("%H:%M:%S")}, {(time() - g.request_time):.3f} secs'}
+    return {'get_page_stats': f'{datetime.now().strftime("%H:%M:%S")}'
+                              f', {(time() - g.get("request_time", time())):.3f} secs'}
 
 
 import watch.views.error

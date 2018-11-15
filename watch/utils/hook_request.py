@@ -18,6 +18,8 @@ def validate_request():
             return redirect(url_for('login', link=request.url))
         else:
             return redirect(url_for('login'))
+    elif request.endpoint in app.config['ADMIN_ONLY_VIEWS'] and session['user_name'] not in app.config['ADMIN_GROUP']:
+        abort(403)
     elif not request.view_args.get('target'):
         return None
     elif request.view_args['target'] in app.config['USERS'][session['user_name']][2]:

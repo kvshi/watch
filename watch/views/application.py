@@ -7,6 +7,7 @@ from cx_Oracle import clientversion, DatabaseError, OperationalError
 from platform import platform
 from time import sleep
 from os import path
+from urllib.request import ProxyHandler, build_opener, install_opener
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -16,7 +17,7 @@ def login():
         flash('It seems the app is not configured.')
     if request.method == 'GET':
         if 'user_name' in session:
-            return redirect(request.args.get('link', url_for('app_ui')))
+            return redirect(request.args.get('link', url_for('get_welcome_page')))
         else:
             return render_template('login.html')
     if request.method == 'POST':
@@ -28,13 +29,13 @@ def login():
             else:
                 session['user_name'] = request.form['name'].lower()
                 session.permanent = app.config['PERMANENT_USER_SESSION']
-                return redirect(request.args.get('link', url_for('app_ui')))
+                return redirect(request.args.get('link', url_for('get_welcome_page')))
         else:
             return render_template('login.html')
 
 
 @app.route('/')
-def app_ui():
+def get_welcome_page():
     return render_template('about.html')
 
 
@@ -112,8 +113,6 @@ def logout():
 @app.route('/stop_server')
 @title('Shutdown server')
 def stop_server():
-    if session['user_name'] not in app.config['ADMIN_GROUP']:
-        abort(403)
     with lock:
         app.config['TARGETS'].clear()
         app.config['USERS'].clear()
@@ -145,8 +144,6 @@ def stop_server():
 @app.route('/error_log')
 @title('View error log')
 def get_error_log():
-    if session['user_name'] not in app.config['ADMIN_GROUP']:
-        abort(403)
     file = path.join(path.dirname(path.dirname(path.abspath(__file__))), 'logs', app.config['ERROR_LOG_NAME'])
     if not path.exists(file):
         abort(404)
@@ -156,8 +153,6 @@ def get_error_log():
 @app.route('/access_log')
 @title('View access log')
 def get_access_log():
-    if session['user_name'] not in app.config['ADMIN_GROUP']:
-        abort(403)
     file = path.join(path.dirname(path.dirname(path.abspath(__file__))), 'logs', app.config['ACCESS_LOG_NAME'])
     if not path.exists(file):
         abort(404)
@@ -210,3 +205,10 @@ def search(target):
         return redirect(url_for('get_session', target=target, sid=text))
     else:
         return redirect(url_for('get_query', target=target, query=text))
+
+
+@app.route('/set_proxy/<proxy>')
+def set_proxy(proxy):
+    d = {'https': f'https://{proxy}'}
+    install_opener(build_opener(ProxyHandler(d)))
+    return redirect(url_for('get_welcome_page'))

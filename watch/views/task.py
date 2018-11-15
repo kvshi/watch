@@ -180,6 +180,7 @@ def wait_for_heavy(t):
                 , 'many'
                 , False)
     if not r:
+        t.data = None
         return False, ''
     else:
         if t.data is None:
@@ -209,6 +210,7 @@ def wait_for_heavy(t):
 @period('10m')
 @command('/temp')
 def wait_for_temp(t):
+    """Notification will be sent again only when the threshold be crossed."""
     r = execute(t.target
                 , "select tablespace_name, to_char(round((used_blocks / total_blocks) * 100)) pct_used"
                   " from v$sort_segment"
@@ -217,6 +219,7 @@ def wait_for_temp(t):
                 , 'many'
                 , False)
     if not r:
+        t.data = None
         return False, ''
     else:
         if t.data is None:
@@ -242,6 +245,7 @@ def wait_for_expiry(t):
                 , 'many'
                 , False)
     if not r:
+        t.data = None
         return False, ''
     else:
         if t.data is None:
@@ -273,6 +277,7 @@ def wait_for_uncommitted(t):
                 , 'many'
                 , False)
     if not r:
+        t.data = None
         return False, ''
     else:
         if t.data is None:
@@ -293,6 +298,7 @@ def wait_for_uncommitted(t):
 @command('/ts')
 @snail()
 def wait_for_ts(t):
+    """Notification will be sent again only when the threshold be crossed."""
     r = execute(t.target
                 , "select * from ("
                   "select files.tablespace_name"
@@ -316,6 +322,7 @@ def wait_for_ts(t):
                 , 'many'
                 , False)
     if not r:
+        t.data = None
         return False, ''
     else:
         if t.data is None:
@@ -383,6 +390,7 @@ def wait_for_queued(t):
                 , 'many'
                 , False)
     if not r:
+        t.data = None
         return False, ''
     else:
         if t.data is None:
@@ -491,7 +499,8 @@ def wait_for_sql_error(t):
     r = execute(t.target
                 , "select username, sql_id, sid, error_message"
                   " from v$sql_monitor"
-                  " where status = 'DONE (ERROR)' and error_number not in (1013, 28, 604)"  # cancel, kill, recursive
+                  " where status = 'DONE (ERROR)'"
+                  " and error_number not in (1013, 28, 604, 24381)"  # cancel, kill, recursive, DML array
                   " and last_refresh_time between :start_date and :end_date and username not like :user_name"
                 , {'start_date': t.data['start_date']
                    , 'end_date': end_date

@@ -120,7 +120,7 @@ CHART_CONFIG = {'style': Style(font_family='Arial'
                 , 'tooltip_border_radius': 2
                 , 'dots_size': 2
                 , 'stroke_style': {'width': 1}}
-                
+
 
 # [REQUIRED]
 # Here is our targets. Each target describes an Oracle DB connection.
@@ -153,6 +153,7 @@ USERS = {
 # - shutdown the app server;
 # - remove other users' tasks.
 ADMIN_GROUP = []
+ADMIN_ONLY_VIEWS = ['set_proxy', 'get_access_log', 'get_error_log', 'stop_server']
 
 # Now let's try to import settings which you have set in local_config.py
 try:

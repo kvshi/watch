@@ -44,7 +44,8 @@ menu_tree = {'get_user': ['user', []]
                                 , 'get_table_indexes'
                                 , 'get_table_partitions'
                                 , 'get_table_ddl'
-                                , 'get_row_count']]
+                                , 'get_row_count'
+                                , 'get_insert_from_select']]
              , 'get_task': ['target', ['wait_for_execution'
                                        , 'wait_for_session'
                                        , 'wait_for_status'
@@ -64,6 +65,5 @@ menu_tree = {'get_user': ['user', []]
                            , ['get_notifications'
                               , 'get_unsent_messages'
                               , 'get_error_log'
-                              , 'get_access_log'
-                              , 'stop_server']]
+                              , 'get_access_log']]
              , 'logout': ['user', []]}
