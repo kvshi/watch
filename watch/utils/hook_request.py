@@ -128,7 +128,7 @@ def render_task():
         chat_id = request.args['notify']
     task = Task(endpoint=request.endpoint
                 , user_name=session['user_name']
-                , target=request.view_args['target']
+                , target=request.view_args.get('target', '')
                 , parameters={k: v for k, v in required_values.items()}
                 , chat_id=chat_id
                 , period=period_value

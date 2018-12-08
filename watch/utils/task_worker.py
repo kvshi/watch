@@ -17,6 +17,19 @@ def prepare_and_send(chat_id, reply_to_message_id, message):
     return send_message(message_parameters)
 
 
+def check_dnd_time():
+    if not app.config['DND_HOURS']:
+        return False
+    start_dnd_hour = app.config['DND_HOURS'][0]
+    end_dnd_hour = app.config['DND_HOURS'][1]
+    now_hour = datetime.now().hour
+    if start_dnd_hour < end_dnd_hour and start_dnd_hour <= now_hour < end_dnd_hour:
+        return True
+    if start_dnd_hour >= end_dnd_hour and (now_hour >= start_dnd_hour or now_hour < end_dnd_hour):
+        return True
+    return False
+
+
 class Worker(threading.Thread):
     def __init__(self):
         super(Worker, self).__init__()
@@ -24,6 +37,10 @@ class Worker(threading.Thread):
 
     def run(self):
         while self.active:
+            if check_dnd_time():
+                sleep(app.config['WORKER_FREQ_SEC'])
+                continue
+
             with lock:
                 active_tasks = tuple(v for v in task_pool.values() if v.state == 'wait')
             for task in active_tasks:

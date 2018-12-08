@@ -166,7 +166,7 @@ def get_table_stats(target):
 
 
 @app.route('/<target>/segments')
-@title('Segment usage')
+@title('Segments')
 @template('list')
 @snail()
 @columns({"tablespace_name": 'str'
@@ -177,7 +177,7 @@ def get_table_stats(target):
 @select("dba_segments group by tablespace_name, owner, segment_name, segment_type")
 @default_filters(("size_mb > 0", "tablespace_name like '%%'"))
 @default_sort("size_mb desc")
-def get_segment_usage(target):
+def get_segments(target):
     return render_page()
 
 
@@ -452,4 +452,24 @@ def get_undo_usage(target):
          , "db_link": 'str'})
 @default_filters(("table_owner not like '%SYS%'",))
 def get_synonyms(target):
+    return render_page()
+
+
+@app.route('/<target>/segment_usage')
+@title('Segment usage')
+@template('list')
+@select("v$segment_statistics")
+@columns({"owner": 'str'
+         , "object_name": 'str'
+         , "subobject_name": 'str'
+         , "tablespace_name": 'str'
+         , "object_type": 'str'
+         , "statistic_name": 'str'
+         , "value": 'int'})
+@default_filters((""
+                  , "statistic_name = 'segment scans'"
+                  , "statistic_name = 'row lock waits'"
+                  , "statistic_name like '%read%'"
+                  , "statistic_name like '%write%'"))
+def get_segment_usage(target):
     return render_page()

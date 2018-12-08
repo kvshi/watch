@@ -444,6 +444,7 @@ def wait_for_recycled(t):
              , 'size_mb': ' >= int'})
 @period('1d')
 def check_size(t):
+    """Each occurrence increases the threshold to 2x."""
     if not t.data:
         t.data = t.parameters['size_mb']
     r = execute(t.target
@@ -459,7 +460,6 @@ def check_size(t):
         t.data = r[0] * 2  # to reduce excess messages
         return False, f'{t.parameters["owner"]}.{t.parameters["segment_name"]} size reached {r[0]} mb on {t.target}.'
     else:
-        t.data = None
         return False, ''
 
 

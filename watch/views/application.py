@@ -58,6 +58,9 @@ def get_app():
         info.append(('Task worker', 'ON' if worker.is_alive() else 'OFF'))
         info.append(('Chat bot', 'ON' if bot.is_alive() else 'OFF'))
 
+        if app.config['DND_HOURS']:
+            info.append(('Do not disturb hours', f"from {app.config['DND_HOURS'][0]} to {app.config['DND_HOURS'][1]}"))
+
         t = render_template('administration.html'
                             , info=info
                             , active_connections=active_connections
