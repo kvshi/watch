@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ElementTree
          , "snap_flag": 'int'})
 @select("dba_hist_snapshot")
 @default_sort("snap_id")
-@default_filters(("begin_date > -1d",))
+@default_filters("begin_date > -1d")
 def get_target_snapshot(target):
     return render_page()
 
@@ -113,7 +113,7 @@ def get_ash_report(target):
           , "description": 'str'})
 @select("dba_advisor_tasks")
 @default_sort("execution_end desc")
-@default_filters(("execution_end > -1d",))
+@default_filters("execution_end > -1d")
 def get_advisor_tasks(target):
     return render_page()
 
@@ -147,7 +147,7 @@ def get_advisor_task_report(target, owner, task):
         " join dba_advisor_findings f on f.task_id = o.task_id and f.object_id = o.object_id"
         " where e.status = 'COMPLETED'")
 @default_sort("execution_start desc")
-@default_filters(("execution_start > -1d",))
+@default_filters("execution_start > -1d")
 def get_advisor_findings(target):
     return render_page()
 

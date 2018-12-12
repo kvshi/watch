@@ -19,9 +19,9 @@ def select(view_select):
     return decorator
 
 
-def default_filters(view_default_filters):
+def default_filters(*view_default_filters):
     def decorator(f):
-        f.default_filters = view_default_filters
+        f.default_filters = tuple(view_default_filters)
         return f
     return decorator
 

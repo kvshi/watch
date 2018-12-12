@@ -60,8 +60,9 @@ def execute(target, statement, parameters=None, fetch_mode='many', user_context=
         elif fetch_mode == 'many':
             result = cursor.execute(statement, **parameters or {}).fetchmany(app.config['ORA_NUM_ROWS'])
         cursor.close()
-    except Error:
-        app.logger.error(f'failed statement: {statement}')
+    except Error as e:
+        if e.args[0].code not in (1013, 604):  # cancel, recursive
+            app.logger.error(f'failed statement: {statement}')
         raise
     except OperationalError:
         raise

@@ -126,12 +126,20 @@ def render_task():
     if request.args.get('notify', '') != '0' and request.args.get('notify', '') \
             in (str(k) for k in g.notification_list.keys()):
         chat_id = request.args['notify']
+    try:
+        priority = int(request.args.get('priority', '2'))
+        if priority not in (1, 2, 3):
+            raise ValueError
+    except ValueError:
+        flash('Incorrect priority')
+        return render_template('task.html')
     task = Task(endpoint=request.endpoint
                 , user_name=session['user_name']
                 , target=request.view_args.get('target', '')
                 , parameters={k: v for k, v in required_values.items()}
                 , chat_id=chat_id
                 , period=period_value
-                , optional=optional)
+                , optional=optional
+                , priority=priority)
     task_pool[task.uuid] = task
     return render_template('task.html', uuid=task.uuid)

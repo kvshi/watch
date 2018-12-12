@@ -4,7 +4,7 @@
 <form method="get">
     {% for k, v in g.parameters.items() %}
     <label>{% if loop.index == 1 %}Required{% endif %}
-        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
+        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}" required>
     </label>
     {% endfor %}
     <label >Filter

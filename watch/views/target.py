@@ -28,7 +28,7 @@ def get_target(target):
          , "created": 'datetime'
          , "last_ddl_time": 'datetime'
          , "status": 'str'})
-@default_filters(("object_type = 'TABLE' and object_name like '%%'",))
+@default_filters("object_type = 'TABLE' and object_name like '%%'")
 @default_sort("object_name, subobject_name")
 def get_target_objects(target):
     return render_page()
@@ -59,7 +59,7 @@ def get_target_objects(target):
          , "round(user_io_wait_time / 1000000) user_io_secs": 'int'
          , "lpad(sql_text, 32) sql_text": 'str'
          , "error_message msg": 'str'})
-@default_filters(("status = 'EXECUTING'", "msg is not null"))
+@default_filters("status = 'EXECUTING'", "msg is not null")
 @default_sort("sql_exec_start desc")
 def get_sql_monitor(target):
     return render_page()
@@ -82,7 +82,7 @@ def get_sql_monitor(target):
          , "sysdate - last_call_et/86400 last_call": 'datetime'
          , "wait_class": 'str'
          , "event": 'str'})
-@default_filters(("status = 'ACTIVE'",))
+@default_filters("status = 'ACTIVE'")
 @default_sort("logon_time desc")
 def get_session_monitor(target):
     return render_page()
@@ -102,7 +102,7 @@ def get_session_monitor(target):
             " at line ' || to_char(sql_plan_line_id) operation": 'str'
           , "message": 'str'})
 @select("v$session_longops")
-@default_filters(("remaining > 0",))
+@default_filters("remaining > 0")
 @default_sort("start_time desc")
 def get_target_long_ops(target):
     return render_page()
@@ -120,7 +120,7 @@ def get_target_long_ops(target):
         " where sample_time >= :sample_time"
         " group by event, object_name")
 @parameters({"sample_time": ' >= datetime'})
-@default_filters(("rownum <= 10",))
+@default_filters("rownum <= 10")
 @default_sort("wait_time desc")
 def get_target_waits(target):
     return render_page()
@@ -137,7 +137,7 @@ def get_target_waits(target):
          , "default_tablespace": 'str'
          , "temporary_tablespace": 'str'})
 @select("dba_users")
-@default_filters(("account_status = 'OPEN'",))
+@default_filters("account_status = 'OPEN'")
 @default_sort("expiry_date desc")
 def get_users(target):
     return render_page()
@@ -159,7 +159,7 @@ def get_users(target):
          , "s.last_analyzed": 'datetime'
          , "s.stale_stats": 'str'})
 @select("all_tab_statistics s join v$parameter p on p.name  = 'db_block_size'")
-@default_filters(("owner not like 'SYS%' and stale_stats = 'YES'", "object_type = 'TABLE'"))
+@default_filters("owner not like 'SYS%' and stale_stats = 'YES'", "object_type = 'TABLE'")
 @default_sort("last_analyzed")
 def get_table_stats(target):
     return render_page()
@@ -175,7 +175,7 @@ def get_table_stats(target):
          , "segment_type": 'str'
          , "round(nvl(sum(bytes) / 1024 / 1024, 0)) size_mb": 'int'})
 @select("dba_segments group by tablespace_name, owner, segment_name, segment_type")
-@default_filters(("size_mb > 0", "tablespace_name like '%%'"))
+@default_filters("size_mb > 0", "tablespace_name like '%%'")
 @default_sort("size_mb desc")
 def get_segments(target):
     return render_page()
@@ -211,6 +211,7 @@ def get_tablespace_usage(target):
 @app.route('/<target>/temp_usage')
 @title('Temp usage')
 @template('list')
+@auto()
 @columns({"tablespace": 'str'
          , "total_mb": 'int'
          , "total_used_mb": 'int'
@@ -253,7 +254,7 @@ def get_temp_usage(target):
          , "projection": 'str'})
 @select("v$sql_plan")
 @default_sort("timestamp desc")
-@default_filters(("operation = 'PARTITION RANGE' and options = 'ALL'", "options = 'CARTESIAN'"))
+@default_filters("operation = 'PARTITION RANGE' and options = 'ALL'", "options = 'CARTESIAN'")
 def get_plans_cache(target):
     return render_page()
 
@@ -280,7 +281,7 @@ def get_plans_cache(target):
           , "elapsed_time": 'int'})
 @select("v$sqlarea")
 @default_sort("last_active_time desc")
-@default_filters(("last_active_time > -1d",))
+@default_filters("last_active_time > -1d")
 def get_top_sql(target):
     return render_page()
 
@@ -337,7 +338,7 @@ def get_privileges(target):
           , "object_type": 'str'})
 @select("v$rman_status")
 @default_sort("end_time desc")
-@default_filters(("end_time > -1d",))
+@default_filters("end_time > -1d")
 def get_rman_status(target):
     return render_page()
 
@@ -367,7 +368,7 @@ def get_dml_locks(target):
           , "sum(subpartition_count) subpart_count": 'int'})
 @select("all_tab_partitions group by table_owner, table_name")
 @default_sort("part_count desc")
-@default_filters(("part_count > 1000 or subpart_count > 1000",))
+@default_filters("part_count > 1000 or subpart_count > 1000")
 def get_tab_partitions_count(target):
     return render_page()
 
@@ -382,7 +383,7 @@ def get_tab_partitions_count(target):
           , "sum(subpartition_count) subpart_count": 'int'})
 @select("all_ind_partitions group by index_owner, index_name")
 @default_sort("part_count desc")
-@default_filters(("part_count > 1000 or subpart_count > 1000",))
+@default_filters("part_count > 1000 or subpart_count > 1000")
 def get_ind_partitions_count(target):
     return render_page()
 
@@ -402,7 +403,7 @@ def get_ind_partitions_count(target):
          , "drop_segments": 'int'})
 @select("all_tab_modifications")
 @default_sort("timestamp desc")
-@default_filters(("timestamp > -1d",))
+@default_filters("timestamp > -1d")
 def get_modifications(target):
     return render_page()
 
@@ -422,7 +423,7 @@ def get_modifications(target):
         " on u.tablespace_name = t.tablespace_name"
         " where t.contents = 'PERMANENT'")
 @default_sort("pct_fragmented desc")
-@default_filters(("used_blocks_count >= 1000 and pct_fragmented > 30",))
+@default_filters("used_blocks_count >= 1000 and pct_fragmented > 30")
 def get_ts_fragmentation(target):
     return render_page()
 
@@ -450,7 +451,7 @@ def get_undo_usage(target):
          , "table_owner": 'str'
          , "table_name": 'str'
          , "db_link": 'str'})
-@default_filters(("table_owner not like '%SYS%'",))
+@default_filters("table_owner not like '%SYS%'")
 def get_synonyms(target):
     return render_page()
 
@@ -466,10 +467,10 @@ def get_synonyms(target):
          , "object_type": 'str'
          , "statistic_name": 'str'
          , "value": 'int'})
-@default_filters((""
-                  , "statistic_name = 'segment scans'"
-                  , "statistic_name = 'row lock waits'"
-                  , "statistic_name like '%read%'"
-                  , "statistic_name like '%write%'"))
+@default_filters(""
+                 , "statistic_name = 'segment scans'"
+                 , "statistic_name = 'row lock waits'"
+                 , "statistic_name like '%read%'"
+                 , "statistic_name like '%write%'")
 def get_segment_usage(target):
     return render_page()

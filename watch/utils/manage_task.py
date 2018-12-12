@@ -9,7 +9,7 @@ from pprint import pformat
 class Task:
     def __init__(self, uuid=None, endpoint=None, name=None, create_date=None, user_name=None, target=None,
                  last_call=None, execs=None, state=None, parameters=None, period=None, chat_id=None,
-                 reply_to_message_id=None, data=None, optional=None):
+                 reply_to_message_id=None, data=None, optional=None, priority=None):
         self.uuid = uuid or uuid4().hex
         self.endpoint = endpoint
         self.name = name or getattr(app.view_functions[endpoint], 'title', 'Task')
@@ -25,6 +25,7 @@ class Task:
         self.reply_to_message_id = reply_to_message_id
         self.data = data
         self.optional = optional
+        self.priority = priority
 
     def to_list(self):
         return [self.uuid
@@ -41,7 +42,8 @@ class Task:
                 , self.chat_id
                 , self.reply_to_message_id
                 , self.data
-                , self.optional]
+                , self.optional
+                , self.priority]
 
     def __str__(self):
         return pformat(self.__dict__, width=160).replace('\'', '')

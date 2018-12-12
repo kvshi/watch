@@ -114,7 +114,9 @@ CHART_CONFIG = {'style': Style(font_family='Arial'
                                , value_label_font_size=12
                                , legend_font_size=12
                                , background='#FFFFFF'
-                               , plot_background='#FFFFFF')
+                               , plot_background='#FFFFFF'
+                               , title_font_family='Arial'
+                               , title_font_size=12)
                 , 'explicit_size': True
                 , 'height': 400
                 , 'width': 1000

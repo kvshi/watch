@@ -3,7 +3,7 @@
 <form method="get">
     {% for k, v in g.parameters.items() %}
     <label>{% if loop.index == 1 %}Required{% endif %}
-        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
+        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}" required>
     </label>
     {% endfor %}
     {% if g.parameters and g.optional %}<br>{% endif %}
@@ -17,6 +17,13 @@
     {% endif %}
     <label>Period
         <input type="text" class="sql-text" name="period" size="6" value="{% if request.args.get('period') %}{{ request.args['period'] }}{% else %}{{ g.period }}{% endif %}">
+    </label>
+    <label>Priority
+        <select type="text" class="sql-text" name="priority" size="1">
+            <option value="1"{% if request.args.get('priority', 2) | int() == 1 %} selected{% endif %}>High</option>
+            <option value="2"{% if request.args.get('priority', 2) | int() == 2 %} selected{% endif %}>Normal</option>
+            <option value="3"{% if request.args.get('priority', 2) | int() == 3 %} selected{% endif %}>Low</option>
+        </select>
     </label>
     <label>Notify
         <select type="text" class="sql-text" name="notify" size="1">

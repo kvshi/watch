@@ -136,7 +136,7 @@ Let's open `/views/target.py` and go to a function named `get_target_objects`.
          , "created": 'datetime'
          , "last_ddl_time": 'datetime'
          , "status": 'str'})
-@default_filters(("object_type = 'TABLE' and object_name like '%%'",))
+@default_filters("object_type = 'TABLE' and object_name like '%%'")
 @default_sort("object_name, subobject_name")
 def get_target_objects(target):
     return render_page()
@@ -148,7 +148,7 @@ How it works:
 * Your request maps to get_target_objects: `@app.route('/<target>/objects')`
 * The server returns the view page. The page is generated on "standard" template: `@template('list')`.
 * The page contains these controls:
-  * "Filter" field with default value: `@default_filters(("object_type = 'TABLE' and object_name like '%%'",))`
+  * "Filter" field with default value: `@default_filters("object_type = 'TABLE' and object_name like '%%'", ..., ...)`
   * "Sort" field with default value: `@default_sort("object_name, subobject_name")`
   * Draggable labels for columns names: `@columns({"owner": 'str' ... '})`. Use in for sorting and filtering. Note that both values will be parsed before sending to database. See the main page of the app for more information.
   * Draggable labels of all preset filters.

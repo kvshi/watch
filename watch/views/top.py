@@ -72,7 +72,13 @@ def get_top_activity(target):
                   " select 4 t, null s, wait_class v1, wait_class_id v2, count(1) c"
                   " from h group by wait_class, wait_class_id union all"
                   " select 5 t, null s, event v1, event_id v2, count(1) c"
-                  " from h group by event, event_id order by 1, 4, 2"
+                  " from h group by event, event_id union all"
+                  " select 7 t, to_char(sample_time, 'hh24:mi:ss') s, null v1, null v2, count(distinct session_id) c"
+                  " from h group by to_char(sample_time, 'hh24:mi:ss') union all"
+                  " select 8 t, null s, null v1, null v2, to_number(value) c"
+                  " from v$parameter where name = 'cpu_count' union all"
+                  " select 9 t, null s, null v1, null v2, to_number(value) c"
+                  " from v$parameter where name = 'sessions' order by 1, 4, 2"
                   .format(" and nvl(wait_class, 'CPU') like :wait_class" if optional_values
                           .get('wait_class', '') else ""
                           , " and event like :event" if optional_values
@@ -109,7 +115,15 @@ def get_top_activity(target):
     p = deepcopy(app.config['CHART_CONFIG'])
     p['style'].colors = tuple(colors[wait_class] for wait_class in series.keys())
     p['height'] = 10 * 22
-    top_activity = StackedLine(**p, legend_at_bottom=True, legend_at_bottom_columns=len(series.keys()))
+    session_count = max(tuple(item[4] for item in r if item[0] == 7) or (0,))
+    session_limit = max(tuple(item[4] for item in r if item[0] == 9) or (0,))
+    cpu_count = max(tuple(item[4] for item in r if item[0] == 8) or (0,))
+    top_activity = StackedLine(**p
+                               , legend_at_bottom=True
+                               , legend_at_bottom_columns=len(series.keys())
+                               , title=f'sessions(max): {session_count}, '
+                                       f'sessions(limit): {session_limit}, '
+                                       f'cpu cores: {cpu_count};')
     top_activity.fill = True
     top_activity.x_labels = sorted(set(item[1] for item in r if item[0] == 1))
     top_activity.x_labels_major_every = max(-(-len(top_activity.x_labels) // 20), 1)

@@ -42,7 +42,8 @@ class Worker(threading.Thread):
                 continue
 
             with lock:
-                active_tasks = tuple(v for v in task_pool.values() if v.state == 'wait')
+                active_tasks = tuple(t for t in sorted(task_pool.values()
+                                                       , key=lambda x: x.priority) if t.state == 'wait')
             for task in active_tasks:
                 with lock:
                     if not task_pool.get(task.uuid):
