@@ -18,6 +18,10 @@ import xml.etree.ElementTree as ElementTree
             " from v$session where v$session.sql_id = v$sql.sql_id) sid": 'int'})
 @select("v$sql where sql_id = :query")
 def get_query(target, query):
+    """V$SQL lists statistics on shared SQL areas without the GROUP BY clause and contains one row for each """ \
+       """child of the original SQL text entered. Statistics displayed in V$SQL are normally updated at the """ \
+       """end of query execution. However, for long running queries, they are updated every 5 seconds. This """ \
+       """makes it easy to see the impact of long running SQL statements while they are still in progress."""
     return render_page()
 
 
@@ -57,7 +61,7 @@ def get_query_plan(target, query):
 @template('single')
 @content('text')
 @columns({"replace(sql_fulltext,chr(0)) sql_text": 'clob'})
-@select("v$sql where sql_id = :query")
+@select("v$sqlstats where sql_id = :query")
 def get_query_text(target, query):
     return render_page()
 

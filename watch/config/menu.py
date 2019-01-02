@@ -1,7 +1,8 @@
 menu_tree = {'get_user': ['user', []]
              , 'get_target': ['target'
                               , ['get_top_activity'
-                                 , 'get_top_sql'
+                                 , 'get_sql_area'
+                                 , 'get_sql_stats'
                                  , 'get_sql_monitor'
                                  , 'get_session_monitor'
                                  , 'get_plans_cache'
@@ -60,7 +61,9 @@ menu_tree = {'get_user': ['user', []]
                                        , 'check_size'
                                        , 'check_resource_usage'
                                        , 'wait_for_sql_error'
-                                       , 'ping_target']]
+                                       , 'ping_target'
+                                       , 'check_redo_switches'
+                                       , 'check_logs_deletion']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'

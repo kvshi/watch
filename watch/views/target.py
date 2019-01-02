@@ -259,8 +259,8 @@ def get_plans_cache(target):
     return render_page()
 
 
-@app.route('/<target>/sql_stats')
-@title('SQL stats')
+@app.route('/<target>/sql_area')
+@title('SQL area')
 @template('list')
 @snail()
 @columns({"parsing_schema_name psn": 'str'
@@ -282,7 +282,37 @@ def get_plans_cache(target):
 @select("v$sqlarea")
 @default_sort("last_active_time desc")
 @default_filters("last_active_time > -1d")
-def get_top_sql(target):
+def get_sql_area(target):
+    """docs.oracle.com: V$SQLAREA displays statistics on shared SQL areas and contains one row per SQL string. """ \
+        """It provides statistics on SQL statements that are in memory, parsed, and ready for execution. """ \
+        """V$SQL lists statistics on shared SQL areas without the GROUP BY clause and contains one row for each """ \
+        """child of the original SQL text entered. Statistics displayed in V$SQL are normally updated at the end """ \
+        """of query execution. However, for long running queries, they are updated every 5 seconds. This makes """ \
+        """it easy to see the impact of long running SQL statements while they are still in progress. """ \
+        """asktom.oracle.com: ...v$sqlarea is a aggregate of v$sql."""
+    return render_page()
+
+
+@app.route('/<target>/sql_stats')
+@title('SQL stats')
+@template('list')
+@columns({"sql_id": 'str'
+          , "last_active_time": 'datetime'
+          , "disk_reads": 'int'
+          , "direct_writes": 'int'
+          , "rows_processed": 'int'
+          , "cpu_time": 'int'
+          , "user_io_wait_time user_io": 'int'
+          , "executions": 'int'})
+@select("v$sqlstats")
+@default_sort("last_active_time desc")
+@default_filters("last_active_time > -1d")
+def get_sql_stats(target):
+    """docs.oracle.com: V$SQLSTATS displays basic performance statistics for SQL cursors and contains one row per """ \
+        """SQL statement (that is, one row per unique value of SQL_ID). The column definitions for columns in """ \
+        """V$SQLSTATS are identical to those in the V$SQL and V$SQLAREA views. However, the V$SQLSTATS view """ \
+        """differs from V$SQL and V$SQLAREA in that it is faster, more scalable, and has a greater data retention (""" \
+        """the statistics may still appear in this view, even after the cursor has been aged out of the shared pool)."""
     return render_page()
 
 

@@ -114,6 +114,8 @@ Check segment size | Notify when segment (table, index, ...) size has reached sp
 Check resource usage | Notify when some of server resource usage reached specified threshold
 Wait for SQL error | Notify if some query has failed. It is based on sql monitor, but a trigger on servererror is much better.
 Ping target | Notify if ping to the target has failed.
+Check redo switches | Notify if redo logs switch too often.
+Check logs deletion | Notify if too many archived redo logs wait for deletion.
 
 All functions were tested on Oracle 11.2 & 12.1 (single instance mode).
 

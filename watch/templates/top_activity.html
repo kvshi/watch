@@ -36,7 +36,7 @@
     <embed type="image/svg+xml" src="{{ top_activity }}" />
 {% endif %}
 </span>
-{% if top_waits is defined %}
+{% if top_waits is defined and top_waits is not none %}
 <span>
     <embed type="image/svg+xml" src="{{ top_waits }}" />
 </span>

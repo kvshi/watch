@@ -456,7 +456,10 @@ def check_size(t):
                 , False)
     if not r:
         return True, f'Segment {t.parameters["owner"]}.{t.parameters["segment_name"]} not found.'
-    if r[0] >= t.data:
+    if r[0] < t.parameters['size_mb']:
+        t.data = t.parameters['size_mb']
+        return False, ''
+    elif r[0] >= t.data:
         t.data = r[0] * 2  # to reduce excess messages
         return False, f'{t.parameters["owner"]}.{t.parameters["segment_name"]} size reached {r[0]} mb on {t.target}.'
     else:
@@ -530,4 +533,51 @@ def ping_target(t):
         return False, f'Target {t.target} did not respond properly.'
     else:
         t.data = 0
+    return False, ''
+
+
+@app.route('/<target>/check_redo_switches')
+@title('Check redo switches')
+@template('task')
+@parameters({'switches_per_interval': ' >= int'})
+@period('1h')
+def check_redo_switches(t):
+    pt = t.period[-1:]
+    pv = t.period[:-1]
+    t.parameters['start_date'] = datetime.now() - get_offset(pv, pt)
+    r = execute(t.target
+                , "select count(1) switches_count from v$log_history"
+                  " where first_time > :start_date having count(1) >= :switches_per_interval"
+                , {'start_date': t.parameters['start_date']
+                    , 'switches_per_interval': t.parameters['switches_per_interval']}
+                , 'one'
+                , False)
+    if not r:
+        return False, ''
+    else:
+        return False, f'Redo logs on {t.target} have been switched {str(r[0])} times per last {t.period}.'
+
+
+@app.route('/<target>/check_logs_deletion')
+@title('Check logs deletion')
+@template('task')
+@parameters({'size_gb': ' >= int'})
+@period('1h')
+def check_logs_deletion(t):
+    """Each occurrence increases the threshold to 2x."""
+    if not t.data:
+        t.data = t.parameters['size_gb']
+    r = execute(t.target
+                , "select round(nvl(sum(blocks * block_size) / 1024 / 1024 / 1024, 0)) size_gb"
+                  " from v$archived_log where deleted = 'NO'"
+                , {}
+                , 'one'
+                , False)
+    if not r:
+        return False, ''
+    if r[0] >= t.data:
+        t.data = r[0] * 2  # to reduce excess messages
+        return False, f'{str(r[0])} gb of archived logs on {t.target} are waiting to be deleted.'
+    elif r[0] < t.parameters['size_gb']:
+        t.data = t.parameters['size_gb']
     return False, ''

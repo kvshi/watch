@@ -64,8 +64,9 @@ def execute(target, statement, parameters=None, fetch_mode='many', user_context=
         if e.args[0].code not in (1013, 604):  # cancel, recursive
             app.logger.error(f'failed statement: {statement}')
         raise
-    except OperationalError:
-        raise
+    except OperationalError as e:
+        if e.args[0].code not in (1013, 604):  # cancel, recursive
+            raise
     except DatabaseError:
         if cursor:
             cursor.close()

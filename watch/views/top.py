@@ -94,9 +94,6 @@ def get_top_activity(target):
                           .get('user_name', '') else ""
                           )
                 , {**required_values, **optional_values})
-    if not r:
-        flash('Not found')
-        return render_template('top_activity.html')
     colors = {'Other': '#F06EAA'
               , 'Application': '#C02800'
               , 'Configuration': '#5C440B'
@@ -213,4 +210,5 @@ def get_top_activity(target):
                            if 'session_id' not in optional_values.keys() else None
                            , top_objects=top_objects.render_data_uri()
                            , top_waits=top_waits.render_data_uri()
+                           if labels else None
                            )
