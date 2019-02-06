@@ -63,7 +63,9 @@ menu_tree = {'get_user': ['user', []]
                                        , 'wait_for_sql_error'
                                        , 'ping_target'
                                        , 'check_redo_switches'
-                                       , 'check_logs_deletion']]
+                                       , 'check_logs_deletion'
+                                       , 'wait_for_zombie'
+                                       , 'check_job_status']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'

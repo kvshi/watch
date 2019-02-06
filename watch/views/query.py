@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for
+from flask import render_template, redirect, url_for, abort
 from watch import app
 from watch.utils.render_page import render_page
 from watch.utils.decorate_view import *
@@ -33,7 +33,10 @@ def get_query(target, query):
 @parameters({"sql_id": ':query'
             , "type": 'html'})
 def get_query_report(target, query):
-    root = ElementTree.fromstring(render_page(True))
+    result = render_page(True)
+    if not result:
+        abort(404)
+    root = ElementTree.fromstring(result)
     sql_text = root.find('.body/p')
     if sql_text is not None:
         if len(sql_text.text) > 1000:

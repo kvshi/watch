@@ -189,7 +189,7 @@ def wait_for_heavy(t):
             for item in t.data.copy():
                 if item not in [r_item[4] for r_item in r]:
                     t.data.remove(item)
-        message_text = '\n'.join('{} ({}, {}) on {} has been execute for {} minutes and consumes {} Gb of temp space.'
+        message_text = '\n'.join('{} ({}, {}) on {} is executing {} minutes and consumes {} Gb of temp space.'
                                  .format(t_link(f'{t.target}/Q/{item[1]}', item[1])
                                          , item[5]
                                          , item[0]
@@ -581,3 +581,67 @@ def check_logs_deletion(t):
     elif r[0] < t.parameters['size_gb']:
         t.data = t.parameters['size_gb']
     return False, ''
+
+
+@app.route('/<target>/wait_for_zombie')
+@title('Wait for zombie')
+@template('task')
+@parameters({'last_call_minutes': ' >= int'})
+@period('1h')
+def wait_for_zombie(t):
+    """User sessions could stay active and being waiting for an event that never comes.""" \
+        """ They must be killed to free locked resources."""
+    r = execute(t.target
+                , "select sid, username from v$session where type = 'USER' and ("
+                  "(sysdate - last_call_et / 86400 < sysdate - :last_call_minutes * 1 / 24 / 60 and status = 'ACTIVE')"
+                  " or (event = 'SQL*Net break/reset to client' and status = 'INACTIVE'))"
+                , {**t.parameters}
+                , 'many'
+                , False)
+    if not r:
+        t.data = None
+        return False, ''
+    else:
+        if t.data is None:
+            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
+        else:
+            for item in t.data.copy():
+                if item not in [r_item[0] for r_item in r]:
+                    t.data.remove(item)
+        message_text = '\n'.join('Session {} ({}) on {} seems to be a zombie.'
+                                 .format(t_link(f'{t.target}/S/{str(item[0])}', str(item[0]))
+                                         , item[1]
+                                         , t.target)
+                                 for item in r if item[0] not in t.data)
+        for item in r:
+            if item[0] not in t.data:
+                t.data.appendleft(item[0])
+        return False, message_text or ''
+
+
+@app.route('/<target>/check_job_status')
+@title('Check job status')
+@template('task')
+@period('6h')
+def check_job_status(t):
+    r = execute(t.target
+                , "select job, log_user, nvl(failures, 0) fails from dba_jobs  where broken = 'Y'"
+                , {}
+                , 'many'
+                , False)
+    if not r:
+        t.data = None
+        return False, ''
+    else:
+        if t.data is None:
+            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
+        else:
+            for item in t.data.copy():
+                if item not in [r_item[0] for r_item in r]:
+                    t.data.remove(item)
+        message_text = '\n'.join(f'Job {item[0]} ({item[1]}) on {t.target} is broken, {item[2]} failures.'
+                                 for item in r if item[0] not in t.data)
+        for item in r:
+            if item[0] not in t.data:
+                t.data.appendleft(item[0])
+        return False, message_text or ''

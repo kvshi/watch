@@ -116,6 +116,8 @@ Wait for SQL error | Notify if some query has failed. It is based on sql monitor
 Ping target | Notify if ping to the target has failed.
 Check redo switches | Notify if redo logs switch too often.
 Check logs deletion | Notify if too many archived redo logs wait for deletion.
+Wait for zombie | Notify if some sessions do nothing but still are active.
+Check job status | Notify if Oracle Job became broken.
 
 All functions were tested on Oracle 11.2 & 12.1 (single instance mode).
 

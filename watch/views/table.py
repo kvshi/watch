@@ -112,6 +112,7 @@ def get_table_columns(target, owner, table):
           , "i.degree": 'str'
           , "i.join_index": 'str'
           , "i.visibility": 'str'
+          , "i.logging": 'str'
           , "c.columns": 'str'})
 @select("all_indexes i"
         " join (select index_owner, index_name, listagg(column_name, ', ')"
