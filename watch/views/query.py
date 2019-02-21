@@ -63,7 +63,8 @@ def get_query_plan(target, query):
 @title('SQL text')
 @template('single')
 @content('text')
-@columns({"replace(sql_fulltext,chr(0)) sql_text": 'clob'})
+@columns({"case when length(sql_fulltext) <> 1000 then sql_fulltext"
+          "  else (select sql_fulltext from v$sqlarea where sql_id = :query) end sql_text": 'clob'})  # 12c bug
 @select("v$sqlstats where sql_id = :query")
 def get_query_text(target, query):
     return render_page()
