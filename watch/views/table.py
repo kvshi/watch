@@ -89,7 +89,7 @@ def get_row_count(target, owner, table):
         " and p.object_type = 'TABLE' and p.column_name = c.column_name"
         " left join all_subpart_key_columns sp"
         " on sp.owner = c.owner and sp.name = c.table_name"
-        " and sp.object_type = 'TABLE' and p.column_name = c.column_name"
+        " and sp.object_type = 'TABLE' and sp.column_name = c.column_name"
         " where c.owner = :owner and c.table_name = :p_table")
 @default_sort("column_id")
 def get_table_columns(target, owner, table):

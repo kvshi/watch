@@ -94,7 +94,7 @@ def get_query_waits(target, query):
 @template('list')
 @auto()
 @columns({"sid": 'int'
-          , "round((sofar/totalwork) * 100) pct_remaining": 'int'
+          , "round((sofar/nullif(totalwork, 0)) * 100) pct_remaining": 'int'
           , "start_time": 'datetime'
           , "last_update_time": 'datetime'
           , "elapsed_seconds elapsed": 'int'

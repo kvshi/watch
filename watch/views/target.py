@@ -93,7 +93,7 @@ def get_session_monitor(target):
 @template('list')
 @columns({"sid": 'int'
           , "sql_id": 'str'
-          , "to_char(round((sofar/totalwork) * 100)) || '%' complete": 'str'
+          , "to_char(round((sofar/nullif(totalwork, 0)) * 100)) || '%' complete": 'str'
           , "start_time": 'datetime'
           , "last_update_time": 'datetime'
           , "elapsed_seconds elapsed": 'int'
