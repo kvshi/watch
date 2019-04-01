@@ -133,7 +133,7 @@ def get_table_indexes(target, owner, table):
           , "subpartition_count": 'int'
           , "high_value": 'str'
           , "num_rows": 'int'
-          , "last_analyzed": 'int'
+          , "last_analyzed": 'datetime'
           , "compression": 'str'
           , "compress_for": 'str'})
 @select("all_tab_partitions"

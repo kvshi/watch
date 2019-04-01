@@ -21,8 +21,9 @@ Of course, it is actual if your company don't want to buy Oracle Enterprise Mana
 * Flask-based. Minimum dependencies. Easy to customize.
 * Permanent links to all reports and objects can be sent to other people or can be saved to favourites in your browser.
 * Defining permitted targets to each user.
+* A bunch of predefined reports & utilities for creation your's.
 * Background monitoring tasks.
-* Interacting through Telegram chat (notifications & commands).
+* Interacting through [Telegram](https://telegram.org/) chat (notifications & commands).
 
 ![Report example](/docs/top_activity.png) ![Report example](/docs/longops.png)
 
