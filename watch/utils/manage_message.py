@@ -7,7 +7,8 @@ from html import escape
 
 def send_message(parameters):
     try:
-        with urlopen('{}{}/{}?{}'.format(app.config['BOT_PATH']
+        with urlopen('{}{}{}/{}?{}'.format(app.config['BOT_SIMPLE_PROXY']
+                                         , app.config['BOT_PATH']
                                          , app.config['BOT_TOKEN']
                                          , 'sendMessage'
                                          , urlencode(parameters))) as r:

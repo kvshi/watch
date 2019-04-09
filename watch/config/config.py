@@ -79,6 +79,8 @@ BOT_PATH = 'https://api.telegram.org/bot'
 
 # If you have to use a proxy put it here. For example {'https': 'https://127.0.0.1:81'}
 BOT_PROXY = {}
+# For proxy servers which accept original address as /path
+BOT_SIMPLE_PROXY = ''
 
 # Watch server receives chat messages via long polls.
 # Set this parameter to 60 (seconds) or even more. if you are going to use a chat bot.
@@ -158,7 +160,7 @@ USERS = {
 # - shutdown the app server;
 # - remove other users' tasks.
 ADMIN_GROUP = []
-ADMIN_ONLY_VIEWS = ['set_proxy', 'get_access_log', 'get_error_log', 'stop_server']
+ADMIN_ONLY_VIEWS = ['get_access_log', 'get_error_log', 'stop_server']
 
 # Now let's try to import settings which you have set in local_config.py
 try:

@@ -208,10 +208,3 @@ def search(target):
         return redirect(url_for('get_session', target=target, sid=text))
     else:
         return redirect(url_for('get_query', target=target, query=text))
-
-
-@app.route('/set_proxy/<proxy>')
-def set_proxy(proxy):
-    d = {'https': f'https://{proxy}'}
-    install_opener(build_opener(ProxyHandler(d)))
-    return redirect(url_for('get_welcome_page'))
