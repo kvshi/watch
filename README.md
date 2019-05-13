@@ -4,7 +4,7 @@
 
 Is another try to make a monitoring of the Oracle Database more handy.
 
-The Watch created for people who have to deal with long-term sql queries. In other words, if you are data warehouse developer or admin, it could be helpful.
+This app created for people who have to deal with long-term sql queries. In other words, if you are data warehouse developer or admin, it could be helpful.
 
 Oracle DB has an infinity number of system views which may give answers for questions like:
 * Why does my query run slow?
@@ -38,13 +38,13 @@ First thing you should know: cx_Oracle needs Oracle Instant Client. Installing i
 
 Then create a new virtual environment if you don't want to mess your python instance.
 
-Install The Watch:
+Install Watch:
 `pip install git+https://github.com/alx-sdv/watch.git`
 
 ### Settings
 Open `/config/config.py` and follow instructions inside.
 
-Please check your database account privileges. By default the Watch is not going to modify any data, but for heaven's sake make all accounts read-only. 
+Please check your database account privileges. By default Watch is not going to modify any data, but for heaven's sake make all accounts read-only. 
 
 Also restrict an access to critical business data if you find it necessary. All you need is to read system statistic views.
 
@@ -179,7 +179,7 @@ You can make your own view in the same way.
 * Now you are able to get notifications an send some commands to the application.
 
 ### Making you own task
-The Watch task looks like a view, the difference is: it's code will never be executed in http request context.
+Watch task looks like a view, the difference is: it's code will never be executed in http request context.
 
 Open `/views/task.py` and find `wait_for_execution` function:
 * `@template('task')` lets the app know that `wait_for_execution` is not a report-view.

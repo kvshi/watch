@@ -189,6 +189,8 @@ def wait_for_heavy(t):
             for item in t.data.copy():
                 if item not in [r_item[4] for r_item in r]:
                     t.data.remove(item)
+        max_count = 10
+        new_items = [item for item in r if item[4] not in t.data]
         message_text = '\n'.join('{} ({}, {}) on {} is executing {} minutes and consumes {} Gb of temp space.'
                                  .format(t_link(f'{t.target}/Q/{item[1]}', item[1])
                                          , item[5]
@@ -196,7 +198,9 @@ def wait_for_heavy(t):
                                          , t.target
                                          , item[2]
                                          , item[3])
-                                 for item in r if item[4] not in t.data)
+                                 for item in new_items[:max_count - 1])
+        if len(new_items) > max_count:
+            message_text += f'\n and {str(len(new_items) - max_count)} more...'
         for item in r:
             if item[4] not in t.data:
                 t.data.appendleft(item[4])
