@@ -649,3 +649,73 @@ def check_job_status(t):
             if item[0] not in t.data:
                 t.data.appendleft(item[0])
         return False, message_text or ''
+
+
+@app.route('/<target>/check_src_structure')
+@title('Check src structure')
+@template('task')
+@parameters({'destination_schema': ' = str'
+             , 'source_target': ' = str'
+             , 'source_schema': ' = str'})
+@optional({'by_target_prefix': ' = str'
+           , 'by_target_postfix': ' = str'})
+@period('3h')
+def check_src_structure(t):
+    """This task compares destination and source column types for all existing tables in specified schema."""
+    if t.parameters['source_target'] not in app.config['USERS'][t.user_name][2]:
+        return True, f"Source target {t.parameters['source_target']} not exists or not allowed."
+    target_columns = execute(t.target
+                             , "select c.table_name, c.column_name, c.data_type, c.data_length from all_tab_columns c"
+                               " join all_tables t on t.owner = c.owner and t.table_name = c.table_name"
+                               " where c.owner = :destination_schema"
+                               " and c.table_name like :by_target_prefix and c.table_name like :by_target_postfix"
+                               " order by 1, 2"
+                             , {'destination_schema': t.parameters['destination_schema']
+                                , 'by_target_prefix': t.optional.get('by_target_prefix', '') + '%'
+                                , 'by_target_postfix': '%' + t.optional.get('by_target_postfix', '')
+                                }
+                             , 'many'
+                             , False)
+    src_columns = execute(t.parameters['source_target']
+                          , "select :prefix || c.table_name || :postfix,"
+                            " c.column_name, c.data_type, c.data_length from all_tab_columns c"
+                            " join all_tables t on t.owner = c.owner and t.table_name = c.table_name"
+                            " where c.owner = :source_schema order by 1, 2"
+                          , {'source_schema': t.parameters['source_schema']
+                              , 'prefix': t.optional.get('by_target_prefix', '')
+                              , 'postfix': t.optional.get('by_target_postfix', '')
+                             }
+                          , 'many'
+                          , False)
+
+    comparison_results = []
+    for target_column in target_columns:
+        for src_column in src_columns:
+            if target_column[0] == src_column[0] and target_column[1] == src_column[1]:
+                if target_column[2] != src_column[2] or target_column[3] != src_column[3]:
+                    comparison_results.append(f'{target_column[0]}.{target_column[1]}'
+                                              f'\n  {target_column[2]}({target_column[3]})'
+                                              f' → {src_column[2]}({src_column[3]})')
+                break
+    if not comparison_results:
+        t.data = None
+        return False, ''
+    if t.data is None:
+        t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
+    else:
+        for item in t.data.copy():
+            if item not in comparison_results:
+                t.data.remove(item)
+    new_items = [item for item in comparison_results if item not in t.data]
+    if not new_items:
+        return False, ''
+    max_count = 20
+    message_text = '\n'.join([item for item in new_items[:max_count - 1]])
+    message_text = f"Some source tables for {t.target}.{t.parameters['destination_schema']}" \
+                   f" has been changed:\n{message_text}"
+    if len(new_items) > max_count:
+        message_text += f'\n and {str(len(new_items) - max_count)} more...'
+    for item in comparison_results:
+        if item not in t.data:
+            t.data.appendleft(item)
+    return False, message_text

@@ -34,7 +34,7 @@ Of course, it is actual if your company don't want to buy Oracle Enterprise Mana
 * Pygal
 
 ### Installation
-First thing you should know: cx_Oracle needs Oracle Instant Client. Installing it could be a bit painful, please read cx_Oracle guide.
+First thing you should know: cx_Oracle needs Oracle Instant Client. Installing it could be a bit painful, please read [cx_Oracle guide](https://cx-oracle.readthedocs.io/en/latest/installation.html).
 
 Then create a new virtual environment if you don't want to mess your python instance.
 
@@ -53,7 +53,7 @@ Use `run.py` to run the application on internal web-server provided by Flask.
 
 It is not recommended for production, so you can attach app object from `run.py` to your favourite wsgi server.
 
-See the official Flask docs, it contains a lot of scenarios to deploy flask-based application.
+See the official [Flask docs](http://flask.pocoo.org/docs/1.0/deploying/#deployment), it contains a lot of scenarios to deploy flask-based application.
 
 ### Usage
 Some popular system views already included as reports:
@@ -119,6 +119,7 @@ Check redo switches | Notify if redo logs switch too often.
 Check logs deletion | Notify if too many archived redo logs wait for deletion.
 Wait for zombie | Notify if some sessions do nothing but still are active.
 Check job status | Notify if Oracle Job became broken.
+Check src structure | Notify if some source column has been changed.
 
 All functions were tested on Oracle 11.2 & 12.1 (single instance mode).
 

@@ -65,7 +65,8 @@ menu_tree = {'get_user': ['user', []]
                                        , 'check_redo_switches'
                                        , 'check_logs_deletion'
                                        , 'wait_for_zombie'
-                                       , 'check_job_status']]
+                                       , 'check_job_status'
+                                       , 'check_src_structure']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'
