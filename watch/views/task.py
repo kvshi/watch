@@ -719,3 +719,43 @@ def check_src_structure(t):
         if item not in t.data:
             t.data.appendleft(item)
     return False, message_text
+
+
+@app.route('/<target>/check_session_stats')
+@title('Check session')
+@template('task')
+@parameters({'statistic_name': ' = str'
+             , 'value': ' >= int'})
+@period('30m')
+def check_session_stats(t):
+    """Please see "Activity -> Session monitor -> Session -> Session stats" to find all available statistic names."""
+    r = execute(t.target
+                , "select s.sid, n.name, s.value from v$sesstat s join v$statname n on s.statistic# = n.statistic#"
+                  " where n.name = :statistic_name and s.value >= :value order by s.value desc"
+                , {**t.parameters}
+                , 'many'
+                , False)
+    if not r:
+        t.data = None
+        return False, ''
+    else:
+        if t.data is None:
+            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
+        else:
+            for item in t.data.copy():
+                if item not in [r_item[0] for r_item in r]:
+                    t.data.remove(item)
+        max_count = 10
+        new_items = [item for item in r if item[0] not in t.data]
+        message_text = '\n'.join('Session {} on {} has {} = {:,}.'
+                                 .format(t_link(f'{t.target}/S/{str(item[0])}', str(item[0]))
+                                         , t.target
+                                         , item[1]
+                                         , item[2]).replace(',', ' ')
+                                 for item in new_items[:max_count - 1])
+        if len(new_items) > max_count:
+            message_text += f'\n and {str(len(new_items) - max_count)} more...'
+        for item in r:
+            if item[0] not in t.data:
+                t.data.appendleft(item[0])
+        return False, message_text or ''

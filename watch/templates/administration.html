@@ -37,7 +37,7 @@
 <table>
     <tr><th>id</th><th>Name</th><th>Created</th><th>Priority</th><th>Target</th><th>Author</th><th>Recipient</th><th>Last call</th><th>Period</th><th>Execs</th><th>State</th><th>Parameters</th><th>Action</th></tr>
     {% for task in task_pool.values() -%}
-    <tr>
+    <tr{% if task.state == 'run' %} style="color:navy"{% endif %}>
         <td align="right" class="{% if task_id == task.uuid %}selected{% endif %}"><a href="/task/browse?id={{ task.uuid }}">...{{ task.uuid[-8:] }}</a></td>
         <td>{{ task.name }}</td>
         <td>{{ task.create_date.strftime(config['DATETIME_FORMAT']) }}</td>

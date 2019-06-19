@@ -42,3 +42,18 @@ def get_session(target, sid):
 @title('Notify if inactive')
 def notify_if_inactive(target, sid):
     return redirect(url_for('wait_for_session', target=target, sid=sid))
+
+
+@app.route('/<target>/S/<sid>/session_stats')
+@title('Session stats')
+@template('list')
+@auto()
+@columns({"decode(n.class, 1, 'User', 2, 'Redo', 4, 'Enqueue', '8', 'Cache', 16, 'OS',"
+          " 32, 'Real Application Clusters', 64, 'SQL', 128, 'Debug') stat_class": 'str'
+          , "n.name": 'str'
+          , "s.value": 'int'})
+@select("v$sesstat s join v$statname n on s.statistic# = n.statistic# where s.sid = :sid")
+@default_filters("", "name like '%memory%'")
+@default_sort("value desc")
+def get_session_stats(target, sid):
+    return render_page()

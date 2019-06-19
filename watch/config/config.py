@@ -162,6 +162,10 @@ USERS = {
 ADMIN_GROUP = []
 ADMIN_ONLY_VIEWS = ['get_access_log', 'get_error_log', 'stop_server']
 
+# If your custom view is specific for some target it will not be shown for other targets.
+# {view_name: [target_name1, target_name2, ...], ...}
+TARGET_SPECIFIC_VIEWS ={}
+
 # Now let's try to import settings which you have set in local_config.py
 try:
     from watch.config.local_config import *

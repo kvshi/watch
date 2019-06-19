@@ -40,7 +40,9 @@ menu_tree = {'get_user': ['user', []]
                                 , 'get_query_plan_stats'
                                 , 'get_query_report'
                                 , 'notify_if_done']]
-             , 'get_session': ['sid', ['notify_if_inactive']]
+             , 'get_session': ['sid'
+                               , ['get_session_stats'
+                                  , 'notify_if_inactive']]
              , 'get_table': ['table'
                              , ['get_table_columns'
                                 , 'get_table_indexes'
@@ -66,7 +68,8 @@ menu_tree = {'get_user': ['user', []]
                                        , 'check_logs_deletion'
                                        , 'wait_for_zombie'
                                        , 'check_job_status'
-                                       , 'check_src_structure']]
+                                       , 'check_src_structure'
+                                       , 'check_session_stats']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'

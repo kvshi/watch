@@ -36,7 +36,9 @@
                     {% endif %}
                     {% if request.endpoint in menu_tree[top_item][1] or request.endpoint == top_item %}
                         {% for sub_item in menu_tree[top_item][1] %}
-                           <a href="{{ url_for(sub_item, **request.view_args) }}" class="sub-menu-item{% if request.endpoint == sub_item %} selected{% endif %}">{{ g.title[sub_item] }}</a>
+                            {% if sub_item not in config['TARGET_SPECIFIC_VIEWS'].keys() or request.view_args.get('target', '') in config['TARGET_SPECIFIC_VIEWS'][sub_item] %}
+                                <a href="{{ url_for(sub_item, **request.view_args) }}" class="sub-menu-item{% if request.endpoint == sub_item %} selected{% endif %}">{{ g.title[sub_item] }}</a>
+                            {% endif %}
                         {% endfor %}
                     {% endif %}
                 {% endfor %}
