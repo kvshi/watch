@@ -37,7 +37,7 @@
 <table>
     <tr><th>id</th><th>Name</th><th>Created</th><th>Priority</th><th>Target</th><th>Author</th><th>Recipient</th><th>Last call</th><th>Period</th><th>Execs</th><th>State</th><th>Parameters</th><th>Action</th></tr>
     {% for task in task_pool.values() -%}
-    <tr{% if task.state == 'run' %} style="color:navy"{% endif %}>
+    <tr>
         <td align="right" class="{% if task_id == task.uuid %}selected{% endif %}"><a href="/task/browse?id={{ task.uuid }}">...{{ task.uuid[-8:] }}</a></td>
         <td>{{ task.name }}</td>
         <td>{{ task.create_date.strftime(config['DATETIME_FORMAT']) }}</td>
@@ -48,7 +48,7 @@
         <td>{% if task.last_call is not none %}{{ task.last_call.strftime(config['DATETIME_FORMAT']) }}{% endif %}</td>
         <td>{{ task.period }}</td>
         <td align="right">{{ '{:,}'.format(task.execs).replace(',', ' ') }}</td>
-        <td>{{ task.state }}</td>
+        <td class="{% if task.state == 'run' %}selected{% endif %}">{{ task.state }}</td>
         <td><a href="/task/browse?id={{ task.uuid }}">{{ task.parameters.values()|join(', ')|truncate(40, True) }}{% if task.optional %}; {{task.optional.values()|join(', ')|truncate(40, True) }}{% endif %}</a></td>
         <td><a href="/task/cancel?id={{ task.uuid }}" onclick="return confirm('The task will be removed. This action cannot be undone.')">cancel</a>{% if task.state.endswith('error') %}, <a href="/task/reset?id={{ task.uuid }}">reset</a>{% endif %}</td>
     </tr>

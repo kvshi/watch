@@ -53,6 +53,8 @@
                         <a href="/{{ request.view_args['target'] }}/S/{{ col }}">{{ '{:,}'.format(col).replace(',', ' ') }}</a>
                     {%- elif loop.index0 == g.object_name and row[g.object_type] == 'TABLE' -%}
                         <a href="/{{ request.view_args['target'] }}/T/{{ row[g.owner] }}/{{ col }}">{{ col }}</a>
+                    {%- elif loop.index0 == g.object_name and row[g.object_type] == 'VIEW' -%}
+                        <a href="/{{ request.view_args['target'] }}/V/{{ row[g.owner] }}/{{ col }}">{{ col }}</a>
                     {%- elif loop.index0 == g.task_name -%}
                         <a href="/{{ request.view_args['target'] }}/A/{{ row[g.owner] }}/{{ col }}">{{ col }}</a>
                     {%- elif g.types[loop.index0] == 'int' -%}{{ '{:,}'.format(col).replace(',', ' ') }}

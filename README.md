@@ -91,11 +91,12 @@ Query waits | v$active_session_history
 Query long ops | v$session_longops
 Query plan stats | v$sql_plan_monitor
 Monitor report | dbms_sqltune.report_sql_monitor
-Table columns | all_tab_columns
+Table and View columns | all_tab_columns
 Table indexes | all_indexes
 Table partitions | all_tab_partitions
-DDL | dbms_metadata.get_ddl
+Table DDL and View script | dbms_metadata.get_ddl, view text
 Row count | To count rows grouped by specified date.
+Test scan speed | Performs full scan query over chosen table.
 
 And some tasks:
 

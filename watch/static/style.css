@@ -4,7 +4,6 @@ body {
     color: black;
     margin: 0;
     padding: 0;
-    visibility: visible !important;
 }
 
 input[type=search] {
@@ -36,7 +35,7 @@ a:hover {
 }
 
 tr:nth-child(odd) {
-    background: gainsboro;
+    background: #faf0e6;
 }
 
 th, td {

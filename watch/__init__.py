@@ -44,6 +44,7 @@ import watch.views.workload
 import watch.views.query
 import watch.views.session
 import watch.views.table
+import watch.views.view
 from watch.ext import *
 
 title = {k: getattr(f, 'title', '') for k, f in app.view_functions.items()}

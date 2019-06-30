@@ -49,7 +49,11 @@ menu_tree = {'get_user': ['user', []]
                                 , 'get_table_partitions'
                                 , 'get_table_ddl'
                                 , 'get_row_count'
-                                , 'get_insert_from_select']]
+                                , 'get_insert_from_select'
+                                , 'get_scan_speed']]
+             , 'get_view': ['view'
+                            , ['get_view_columns'
+                               , 'get_view_text']]
              , 'get_task': ['target', ['wait_for_execution'
                                        , 'wait_for_session'
                                        , 'wait_for_status'

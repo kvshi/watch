@@ -4,6 +4,7 @@ from watch.utils.decorate_view import *
 from watch.utils.render_page import render_page
 from watch.utils.oracle import execute
 from watch.utils.parse_args import parse_parameters
+from time import time
 
 
 @app.route('/<target>/T/<owner>/<table>')
@@ -164,3 +165,76 @@ def get_insert_from_select(target, owner, table):
                                                          f"SELECT {column_string_list}\n"
                                                          f"FROM ???.{table};\n"
                                                          f"COMMIT;")
+
+
+@app.route('/<target>/T/<owner>/<table>/scan')
+@title('Test scan speed')
+@columns({'name': 'str'
+          , 'scan_time,_sec': 'int'
+          , 'row_count': 'int'
+          , 'row/sec': 'int'
+          , 'size,_mb': 'int'
+          , 'mb/sec': 'int'})
+def get_scan_speed(target, owner, table):
+    r = execute(target
+                , "select owner, table_name from all_tables"
+                  " where owner = :owner and table_name = :p_table"
+                , {'owner': owner, 'p_table': table}
+                , 'one')
+    if not r:
+        abort(404)
+    owner_name, table_name = r
+    part_list = execute(target
+                        , "select partition_name from all_tab_partitions"
+                          " where table_owner = :owner and table_name = :p_table"
+                          " order by partition_name"
+                        , {'owner': owner_name, 'p_table': table_name})
+    start_table_scan_time = time()
+    scan_results = []
+    if part_list:
+        r = execute(target
+                    , "select  nvl(sp.partition_name, s.partition_name) partition_name"
+                      " , round(nvl(sum(bytes) / 1024 / 1024, 0)) size_mb"
+                      " from dba_segments s left join all_tab_subpartitions sp"
+                      " on sp.table_owner = s.owner and sp.table_name = s.segment_name"
+                      " and s.partition_name = sp.subpartition_name"
+                      " where s.owner = :owner and s.segment_name = :p_table"
+                      " group by nvl(sp.partition_name, s.partition_name) order by 1"
+                    , {'owner': owner_name, 'p_table': table_name})
+        part_size = {item[0]: item[1] for item in r}
+        for partition in part_list:
+            start_part_scan_time = time()
+            r = execute(target
+                        , f"select /*+ no_index(t) */ count(*)"
+                          f" from {owner_name}.{table_name} partition ({partition[0]}) t", {}, 'one')
+            finish_part_scan_time = time()
+            scan_results.append((partition[0], r[0], round(finish_part_scan_time - start_part_scan_time)
+                                 , part_size.get(partition[0], 0)))
+    else:
+        r = execute(target
+                    , f"select /*+ no_index(t) */ count(*) from {owner_name}.{table_name} t", {}, 'one')
+        table_size = execute(target
+                             , "select round(nvl(sum(bytes) / 1024 / 1024, 0)) size_mb"
+                               " from dba_segments where owner = :owner and segment_name = :p_table"
+                             , {'owner': owner_name, 'p_table': table_name}, 'one')
+        scan_results.append((table_name, r[0], round(time() - start_table_scan_time), table_size[0]))
+
+    finish_table_scan_time = time()
+    output_data = []
+    for item in scan_results:
+        output_data.append((item[0], item[2], item[1], item[1] if item[2] == 0 else round(item[1] / item[2])
+                            , item[3], item[3] if item[2] == 0 else round(item[3] / item[2])))
+    if part_list:
+        total_row_count = sum(list(zip(*output_data))[2])
+        total_scan_time = round(finish_table_scan_time - start_table_scan_time)
+        total_size = sum(part_size.values())
+        output_data.append(('TOTAL:'
+                            , total_scan_time
+                            , total_row_count
+                            , total_row_count if total_scan_time == 0 else round(total_row_count / total_scan_time)
+                            , total_size
+                            , total_size if total_scan_time == 0 else round(total_size / total_scan_time)))
+
+    return render_template('static_list.html'
+                           , text=f'Completed in {((finish_table_scan_time - start_table_scan_time) / 60):.1f} minutes.'
+                           , data=output_data)

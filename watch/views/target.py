@@ -41,6 +41,7 @@ def get_target_objects(target):
 @select("v$sql_monitor")
 @columns({"sid": 'int'
          , "sql_id": 'str'
+         , "px_maxdop px": 'int'
          , "status": 'str'
          , "username": 'str'
          , "module": 'str'
@@ -71,6 +72,7 @@ def get_sql_monitor(target):
 @auto()
 @select("v$session s left join audit_actions a on a.action = s.command where type = 'USER'")
 @columns({"sid": 'int'
+         , "(select 'Y' from v$px_session ps where ps.qcsid = s.sid and ps.sid = s.sid) px": 'str'
          , "sql_id": 'str'
          , "a.name command": 'str'
          , "username": 'str'
@@ -85,6 +87,7 @@ def get_sql_monitor(target):
 @default_filters("status = 'ACTIVE'")
 @default_sort("logon_time desc")
 def get_session_monitor(target):
+    """Px means the session is parallel run coordinator."""
     return render_page()
 
 
