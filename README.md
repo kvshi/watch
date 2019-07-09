@@ -122,7 +122,7 @@ Wait for zombie | Notify if some sessions do nothing but still are active.
 Check job status | Notify if Oracle Job became broken.
 Check src structure | Notify if some source column has been changed.
 Check session | To monitor session stat params.
-
+Check concurrency | To monitor average concurrency time
 All functions were tested on Oracle 11.2 & 12.1 (single instance mode).
 
 ### Making your own view

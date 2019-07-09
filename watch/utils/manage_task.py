@@ -4,12 +4,13 @@ from uuid import uuid4
 from pickle import load as unpickle, dump as pickle, HIGHEST_PROTOCOL
 from os import path
 from pprint import pformat
+from collections import deque
 
 
 class Task:
     def __init__(self, uuid=None, endpoint=None, name=None, create_date=None, user_name=None, target=None,
                  last_call=None, execs=None, state=None, parameters=None, period=None, chat_id=None,
-                 reply_to_message_id=None, data=None, optional=None, priority=None):
+                 reply_to_message_id=None, data=None, optional=None, priority=None, finished=None, text=None):
         self.uuid = uuid or uuid4().hex
         self.endpoint = endpoint
         self.name = name or getattr(app.view_functions[endpoint], 'title', 'Task')
@@ -26,6 +27,8 @@ class Task:
         self.data = data
         self.optional = optional
         self.priority = priority
+        self.finished = finished or False
+        self.text = text
 
     def to_list(self):
         return [self.uuid
@@ -43,10 +46,55 @@ class Task:
                 , self.reply_to_message_id
                 , self.data
                 , self.optional
-                , self.priority]
+                , self.priority
+                , self.finished
+                , self.text]
 
     def __str__(self):
         return pformat(self.__dict__, width=160).replace('\'', '')
+
+    def finish(self, message):
+        self.finished = True
+        return message
+
+    def abort(self, message):
+        self.finished = True
+        return message
+
+    def get_message(self, result, message_item, header=None, n=None, k=None):
+        message_type = getattr(app.view_functions[self.endpoint], 'message_type', '')
+        if not message_type:
+            return
+        if message_type == 'threshold':
+            if not self.data or result[0] < n:
+                self.data = n
+            if result[0] >= self.data:
+                self.data = round(result[0] * k)
+                return message_item(self, str(result[0]))
+            return
+        if not result:
+            if message_type == 'outstanding':
+                self.data = None
+            return
+        if message_type == 'outstanding':
+            if self.data is None:
+                self.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
+            else:
+                for item in self.data.copy():
+                    if item not in [r_item[n] for r_item in result]:
+                        self.data.remove(item)
+            result = [item for item in result if item[n] not in self.data]
+            if not result:
+                return
+        message_text = header(self) + ':\n' if header else ''
+        max_count = app.config['MAX_MESSAGE_ITEMS']
+        message_text += '\n'.join(message_item(self, item) for item in result[:max_count - 1])
+        if len(result) > max_count:
+            message_text += f'\n and {str(len(result) - max_count)} more...'
+        if message_type == 'outstanding':
+            for item in result:
+                self.data.appendleft(item[n])
+        return message_text
 
 
 def cancel_task(task_pool, uuid):

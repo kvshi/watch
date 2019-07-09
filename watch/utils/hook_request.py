@@ -140,6 +140,7 @@ def render_task():
                 , chat_id=chat_id
                 , period=period_value
                 , optional=optional
-                , priority=priority)
+                , priority=priority
+                , text=request.args.get('text', None))
     task_pool[task.uuid] = task
     return render_template('task.html', uuid=task.uuid)

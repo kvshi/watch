@@ -4,7 +4,6 @@ from watch.utils.decorate_view import *
 from watch.utils.oracle import execute, get_tab_columns, ping
 from watch.utils.parse_args import dlm_str_to_list, upper_values, get_offset
 from datetime import datetime
-from collections import deque
 from watch.utils.manage_message import t_link
 
 
@@ -13,7 +12,7 @@ from watch.utils.manage_message import t_link
 def get_task(target):
     with lock:
         task_count = tuple(v.user_name for v in task_pool.values() if v.target == target).count(session['user_name'])
-        t = render_template('layout.html', text=f'You have {task_count} active tasks for {target}.')
+        t = render_template('layout.html', text=f'{task_count} active tasks for {target}.')
     return t
 
 
@@ -34,7 +33,7 @@ def wait_for_execution(t):
                     , 'one'
                     , False)
         if not e[0]:
-            return True, 'Not found'
+            return t.abort('Not found')
         t.data = {'sql_id': e[0], 'exec_id': e[1], 'sql_exec_start': e[2]}
     r = execute(t.target
                 , "select sql_id, status"
@@ -44,19 +43,20 @@ def wait_for_execution(t):
                 , 'one'
                 , False)
     if not r:
-        return True, 'Not found'
+        return t.abort('Not found')
     if r[1] == 'EXECUTING':
-        return False, ''
+        return
     if t.reply_to_message_id:
-        return True, r[1].lower()
-    return True, '{} on {} is {}.'.format(t_link(f'{t.target}/Q/{r[0]}', r[0])
-                                          , t.target
-                                          , r[1].lower())
+        return t.finish(r[1].lower())
+    return t.finish('{} on {} is {}.'.format(t_link(f'{t.target}/Q/{r[0]}', r[0])
+                                             , t.target
+                                             , r[1].lower()))
 
 
 @app.route('/<target>/wait_for_status')
 @title('Wait for status')
 @template('task')
+@message_type('list')
 @parameters({"owner": ' = str'
              , "table": ' = str'
              , "date_column": ' = str'
@@ -74,35 +74,36 @@ def wait_for_status(t):
         table_columns = get_tab_columns(t.target, t.parameters['owner'], t.parameters['table'])
         for item in [t.parameters['date_column'], t.parameters['status_column']] + t.parameters['info_column']:
             if item not in table_columns.keys():
-                return True, f'{t.parameters["owner"]}.{t.parameters["table"]}.{item} not found.'
+                return t.abort(f'{t.parameters["owner"]}.{t.parameters["table"]}.{item} not found.')
         if 'DATE' not in table_columns[t.parameters['date_column']]:
-            return True, f'{t.parameters["date_column"]} must be a date type.'
+            return t.abort(f'{t.parameters["date_column"]} must be a date type.')
 
         status_type = table_columns[t.parameters['status_column']]
         if status_type != 'NUMBER' and 'CHAR' not in status_type:
-            return True, f'Unsupported type of {t.parameters["status_column"]} (neither number nor char).'
+            return t.abort(f'Unsupported type of {t.parameters["status_column"]} (neither number nor char).')
         if status_type == 'NUMBER':
             try:
                 t.parameters['status_values'] = [int(v) for v in t.parameters['status_values']]
             except ValueError:
-                return True, f'All of status values ({t.parameters["status_values"]}) must be numbers.'
+                return t.abort(f'All of status values ({t.parameters["status_values"]}) must be numbers.')
 
         t.parameters['info_column'] = {k: table_columns[k] for k in t.parameters['info_column']}
 
         filter_column_type = ''
         if t.optional.get('filter_column', False):
             if t.optional['filter_column'] not in table_columns.keys():
-                return True, f'{t.parameters["owner"]}.{t.parameters["table"]}.{t.optional["filter_column"]} not found.'
+                return t.abort(f'{t.parameters["owner"]}.{t.parameters["table"]}'
+                               f'.{t.optional["filter_column"]} not found.')
             filter_column_type = table_columns[t.optional['filter_column']]
             if filter_column_type != 'NUMBER' and 'CHAR' not in filter_column_type:
-                return True, f'Unsupported type of {t.optional["filter_column"]} (neither number nor char).'
+                return t.abort(f'Unsupported type of {t.optional["filter_column"]} (neither number nor char).')
             if not t.optional.get('filter_value', False):
-                return True, 'Filter value is not set.'
+                return t.abort('Filter value is not set.')
             if filter_column_type == 'NUMBER':
                 try:
                     t.optional['filter_value'] = int(t.optional['filter_value'])
                 except ValueError:
-                    return True, f'Filter value must be a number.'
+                    return t.abort(f'Filter value must be a number.')
         t.data = {'status_values': t.parameters['status_values']
                   , 'status_type': status_type
                   , 'start_date': t.create_date
@@ -138,21 +139,15 @@ def wait_for_status(t):
                 , 'many'
                 , False)
     t.data['start_date'] = end_date
-    if not r:
-        return False, ''
-    else:
-        message_text = f'{t.parameters["table"]} ({t.target}):\n'
-        max_count = 10
-        message_text += '\n'.join(f'{item[0]} {item[1]}'.replace('<', '&lt;').replace('>', '&gt;')
-                                  for item in r[:max_count - 1])
-        if len(r) > max_count:
-            message_text += f'\n and {str(len(r) - max_count)} more...'
-    return False, message_text
+    return t.get_message(r
+                         , lambda o, i: f'{i[0]} {i[1]}'.replace('<', '&lt;').replace('>', '&gt;')
+                         , lambda o: f'{o.parameters["table"]} ({o.target})')
 
 
 @app.route('/<target>/wait_for_heavy')
 @title('Wait for heavy')
 @template('task')
+@message_type('outstanding')
 @parameters({'exec_time_min': ' >= int'
              , 'temp_usage_gb': ' >= int'})
 @optional({'user_name': ' like str'
@@ -179,37 +174,14 @@ def wait_for_heavy(t):
                 , {**t.parameters, **t.optional}
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
-        else:
-            for item in t.data.copy():
-                if item not in [r_item[4] for r_item in r]:
-                    t.data.remove(item)
-        max_count = 10
-        new_items = [item for item in r if item[4] not in t.data]
-        message_text = '\n'.join('{} ({}, {}) on {} is executing {} minutes and consumes {} Gb of temp space.'
-                                 .format(t_link(f'{t.target}/Q/{item[1]}', item[1])
-                                         , item[5]
-                                         , item[0]
-                                         , t.target
-                                         , item[2]
-                                         , item[3])
-                                 for item in new_items[:max_count - 1])
-        if len(new_items) > max_count:
-            message_text += f'\n and {str(len(new_items) - max_count)} more...'
-        for item in r:
-            if item[4] not in t.data:
-                t.data.appendleft(item[4])
-        return False, message_text or ''
+    return t.get_message(r, lambda o, i: '{} ({}, {}) on {} is executing {} minutes and consumes {} Gb of temp space.'
+                         .format(t_link(f'{o.target}/Q/{i[1]}', i[1]), i[5], i[0], o.target, i[2], i[3]), None, 4)
 
 
 @app.route('/<target>/wait_for_temp')
 @title('Critical temp usage')
 @template('task')
+@message_type('outstanding')
 @parameters({'pct_used': ' >= int'})
 @period('10m')
 @command('/temp')
@@ -222,21 +194,13 @@ def wait_for_temp(t):
                 , t.parameters
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = tuple()
-        message_text = '\n'.join(f'Tablespace {item[0]} on {t.target} is {item[1]}% used.' for item in r
-                                 if item[0] not in t.data)
-        t.data = tuple(item[0] for item in r)
-        return False, message_text
+    return t.get_message(r, lambda o, i: f'Tablespace {i[0]} on {o.target} is {i[1]}% used.', None, 0)
 
 
 @app.route('/<target>/wait_for_expiry')
 @title('Expired users')
 @template('task')
+@message_type('outstanding')
 @parameters({'expires_in_days': ' >= int'})
 @period('1d')
 @command('/exp')
@@ -248,22 +212,13 @@ def wait_for_expiry(t):
                 , t.parameters
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = ()
-        message_text = '\n'.join(f'User account {item[0]} on {t.target}'
-                                 f' expires at {item[1]}.' for item in r
-                                 if item[0] not in t.data)
-        t.data = tuple(item[0] for item in r)
-        return False, message_text
+    return t.get_message(r, lambda o, i: f'User account {i[0]} on {o.target} expires at {i[1]}.', None, 0)
 
 
 @app.route('/<target>/wait_for_uncommitted')
 @title('Uncommitted trans')
 @template('task')
+@message_type('outstanding')
 @parameters({'idle_time_minutes': ' >= int'})
 @optional({'ignore_tables': ' like str'})
 @period('1h')
@@ -280,22 +235,14 @@ def wait_for_uncommitted(t):
                     , 'ignore_tables': t.optional.get('ignore_tables', '-')}
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = ()
-        message_text = '\n'.join(f'It seems {item[0]} ({item[1]})'
-                                 f' forgot to commit a transaction on {t.target} ({item[2]}).' for item in r
-                                 if item[0] not in t.data)
-        t.data = tuple(item[0] for item in r)
-        return False, message_text
+    return t.get_message(r, lambda o, i: f'It seems {i[0]} ({i[1]})'
+                                         f' forgot to commit a transaction on {o.target} ({i[2]}).', None, 0)
 
 
 @app.route('/<target>/wait_for_ts')
 @title('Critical tabspace usage')
 @template('task')
+@message_type('outstanding')
 @parameters({'pct_used': ' >= int'})
 @optional({'tablespace_name': ' like str'})
 @period('6h')
@@ -325,21 +272,8 @@ def wait_for_ts(t):
                 , {'pct_used': t.parameters['pct_used'], 'tablespace_name': t.optional.get('tablespace_name', '%')}
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = ()
-        max_count = 20
-        message_text = '\n'.join(f'Tablespace {item[0]} on {t.target} is {item[3]}% used'
-                                 f' ({item[1]} of {item[2]} Gb).'
-                                 for item in
-                                 tuple(r_item for r_item in r if r_item[0] not in t.data)[:max_count - 1])
-        if message_text and len(r) > max_count:
-            message_text += f'\n and {str(len(r) - max_count)} more...'
-        t.data = tuple(item[0] for item in r)
-        return False, message_text
+    return t.get_message(r, lambda o, i: f'Tablespace {i[0]} on {o.target} is {i[3]}%'
+                                         f' used ({i[1]} of {i[2]} Gb).', None, 0)
 
 
 @app.route('/<target>/wait_for_session')
@@ -357,7 +291,7 @@ def wait_for_session(t):
                     , 'one'
                     , False)
         if not e:
-            return True, 'Not found'
+            return t.abort('Not found')
         t.data = {'sid': e[0]}
     r = execute(t.target
                 , "select sid, status from v$session where sid = :sid"
@@ -365,15 +299,16 @@ def wait_for_session(t):
                 , 'one'
                 , False)
     if not r:
-        return True, f"Session {t.data['sid']} is not found on {t.target}."
+        return t.finish(f"Session {t.data['sid']} is not found on {t.target}.")
     if r[1] != 'INACTIVE':
-        return False, ''
-    return True, f'Session {r[0]} on {t.target} is {r[1].lower()}.'
+        return
+    return t.finish(f'Session {r[0]} on {t.target} is {r[1].lower()}.')
 
 
 @app.route('/<target>/wait_for_queued')
 @title('Wait for queued')
 @template('task')
+@message_type('outstanding')
 @parameters({'queued_time_sec': ' >= int'})
 @optional({'ignore_event': ' like str'})
 @period('5m')
@@ -382,44 +317,27 @@ def wait_for_queued(t):
     pv = t.period[:-1]
     t.parameters['start_date'] = datetime.now() - get_offset(pv, pt)
     r = execute(t.target
-                , "select nvl(sql_id, 'Unknown sql'), event, session_id, machine, count(1) waits"
+                , "select nvl(sql_id, 'Unknown sql') || ' ' || event || ' ' || to_char(session_id), "
+                  " nvl(sql_id, 'Unknown sql'), event, session_id, machine, count(1) waits"
                   " from v$active_session_history"
                   " where event like 'enq:%' and sample_time > :start_date"
                   " and event not like :ignore_event"
-                  " group by sql_id, event, session_id, machine"
+                  " group by nvl(sql_id, 'Unknown sql') || ' ' || event || ' ' || to_char(session_id),"
+                  " sql_id, event, session_id, machine"
                   " having count(1) > :queued_time_sec"
                 , {'start_date': t.parameters['start_date']
                     , 'queued_time_sec': t.parameters['queued_time_sec']
                     , 'ignore_event': t.optional.get('ignore_event', '---')}
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
-        else:
-            for item in t.data.copy():
-                if item not in [f'{r_item[0]} {r_item[1]} {r_item[2]}' for r_item in r]:
-                    t.data.remove(item)
-        message_text = '\n'.join('{} ({}, {}) on {} has been queued for {} seconds ({}).'
-                                 .format(t_link(f'{t.target}/Q/{item[0]}', item[0])
-                                         , item[3]
-                                         , item[2]
-                                         , t.target
-                                         , item[4]
-                                         , item[1])
-                                 for item in r if item[0] not in t.data)
-        for item in r:
-            if item[0] not in t.data:
-                t.data.appendleft(f'{item[0]} {item[1]} {item[2]}')
-        return False, message_text or ''
+    return t.get_message(r, lambda o, i: '{} ({}, {}) on {} has been queued for {} seconds ({}).'
+                         .format(t_link(f'{t.target}/Q/{i[1]}', i[1]), i[4], i[3], t.target, i[5], i[2]), None, 0)
 
 
 @app.route('/<target>/wait_recycled')
 @title('Wait for recycled')
 @template('task')
+@message_type('threshold')
 @parameters({'space_gb': ' >= int'})
 @period('1d')
 def wait_for_recycled(t):
@@ -427,30 +345,24 @@ def wait_for_recycled(t):
                 , "select round(sum(r.space * p.value) / 1024 / 1024 / 1024) space_gb"
                   " from dba_recyclebin r join v$parameter p on p.name = 'db_block_size'"
                   " where r.can_purge = 'YES' and nvl(r.space, 0) <> 0"
-                  " having round(sum(r.space * p.value) / 1024 / 1024 / 1024) >= :space_gb"
-                , t.parameters
+                , {}
                 , 'one'
                 , False)
-    if not r:
-        t.data = 0
-    else:
-        if t.data is None or r[0] >= t.data * 2:  # to reduce excess messages
-            t.data = r[0]
-            return False, f'{r[0]} Gb can be purged from recycle bin on {t.target}.'
-    return False, ''
+    return t.get_message(r
+                         , lambda o, i: f'{i} Gb can be purged from recycle bin on {o.target}.'
+                         , None, t.parameters['space_gb'], 2)
 
 
 @app.route('/<target>/check_size')
 @title('Check segment size')
 @template('task')
+@message_type('threshold')
 @parameters({'owner': ' = str'
              , 'segment_name': ' = str'
              , 'size_mb': ' >= int'})
 @period('1d')
 def check_size(t):
     """Each occurrence increases the threshold to 2x."""
-    if not t.data:
-        t.data = t.parameters['size_mb']
     r = execute(t.target
                 , "select round(nvl(sum(bytes) / 1024 / 1024, 0)) size_mb"
                   " from dba_segments"
@@ -459,15 +371,10 @@ def check_size(t):
                 , 'one'
                 , False)
     if not r:
-        return True, f'Segment {t.parameters["owner"]}.{t.parameters["segment_name"]} not found.'
-    if r[0] < t.parameters['size_mb']:
-        t.data = t.parameters['size_mb']
-        return False, ''
-    elif r[0] >= t.data:
-        t.data = r[0] * 2  # to reduce excess messages
-        return False, f'{t.parameters["owner"]}.{t.parameters["segment_name"]} size reached {r[0]} mb on {t.target}.'
-    else:
-        return False, ''
+        return t.abort(f'Segment {t.parameters["owner"]}.{t.parameters["segment_name"]} not found.')
+    return t.get_message(r
+                         , lambda o, i: f'{o.parameters["owner"]}.{o.parameters["segment_name"]}'
+                                        f' size reached {i} mb on {o.target}.', None, t.parameters['size_mb'], 2)
 
 
 @app.route('/<target>/check_resource_usage')
@@ -485,16 +392,14 @@ def check_resource_usage(t):
                 , t.parameters
                 , 'many'
                 , False)
-    if not r:
-        return False, ''
-    else:
-        return False, '\n'.join(f'The resource {t.target}.{item[0]}'
-                                f' is {item[3]}% used ({item[1]} of {item[2]}).' for item in r)
+    return '\n'.join(f'The resource {t.target}.{item[0]}'
+                     f' is {item[3]}% used ({item[1]} of {item[2]}).' for item in r)
 
 
 @app.route('/<target>/wait_for_sql_error')
 @title('Wait for SQL error')
 @template('task')
+@message_type('list')
 @optional({'ignore_user': ' like str'})
 @period('5m')
 def wait_for_sql_error(t):
@@ -515,16 +420,9 @@ def wait_for_sql_error(t):
                 , 'many'
                 , False)
     t.data['start_date'] = end_date
-    if not r:
-        return False, ''
-    else:
-        return False, '\n'.join('{} ({}, {}) on {} is failed ({}).'
-                                .format(t_link(f'{t.target}/Q/{item[1]}', item[1])
-                                        , item[2]
-                                        , item[0]
-                                        , t.target
-                                        , item[3].replace('\n', ' '))
-                                for item in r[:10]) + ('' if len(r) <= 10 else f'\n and {str(len(r) - 10)} more...')
+    return t.get_message(r, lambda o, i: '{} ({}, {}) on {} is failed ({}).'
+                         .format(t_link(f'{o.target}/Q/{i[1]}'
+                                        , i[1]), i[2], i[0], o.target, i[3].replace('\n', ' ')))
 
 
 @app.route('/<target>/ping_target')
@@ -534,10 +432,9 @@ def wait_for_sql_error(t):
 def ping_target(t):
     if ping(t.target) == -1 and t.data != -1:
         t.data = -1
-        return False, f'Target {t.target} did not respond properly.'
+        return f'Target {t.target} did not respond properly.'
     else:
         t.data = 0
-    return False, ''
 
 
 @app.route('/<target>/check_redo_switches')
@@ -556,40 +453,31 @@ def check_redo_switches(t):
                     , 'switches_per_interval': t.parameters['switches_per_interval']}
                 , 'one'
                 , False)
-    if not r:
-        return False, ''
-    else:
-        return False, f'Redo logs on {t.target} have been switched {str(r[0])} times per last {t.period}.'
+    return f'Redo logs on {t.target} have been switched {str(r[0])} times per last {t.period}.' if r else None
 
 
 @app.route('/<target>/check_logs_deletion')
 @title('Check logs deletion')
 @template('task')
+@message_type('threshold')
 @parameters({'size_gb': ' >= int'})
 @period('1h')
 def check_logs_deletion(t):
     """Each occurrence increases the threshold to 2x."""
-    if not t.data:
-        t.data = t.parameters['size_gb']
     r = execute(t.target
                 , "select round(nvl(sum(blocks * block_size) / 1024 / 1024 / 1024, 0)) size_gb"
                   " from v$archived_log where deleted = 'NO'"
                 , {}
                 , 'one'
                 , False)
-    if not r:
-        return False, ''
-    if r[0] >= t.data:
-        t.data = r[0] * 2  # to reduce excess messages
-        return False, f'{str(r[0])} gb of archived logs on {t.target} are waiting to be deleted.'
-    elif r[0] < t.parameters['size_gb']:
-        t.data = t.parameters['size_gb']
-    return False, ''
+    return t.get_message(r, lambda o, i: f'{i} gb of archived logs on {o.target} are waiting to be deleted.'
+                         , None, t.parameters['size_gb'], 2)
 
 
 @app.route('/<target>/wait_for_zombie')
 @title('Wait for zombie')
 @template('task')
+@message_type('outstanding')
 @parameters({'last_call_minutes': ' >= int'})
 @period('1h')
 def wait_for_zombie(t):
@@ -602,30 +490,15 @@ def wait_for_zombie(t):
                 , {**t.parameters}
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
-        else:
-            for item in t.data.copy():
-                if item not in [r_item[0] for r_item in r]:
-                    t.data.remove(item)
-        message_text = '\n'.join('Session {} ({}) on {} seems to be a zombie.'
-                                 .format(t_link(f'{t.target}/S/{str(item[0])}', str(item[0]))
-                                         , item[1]
-                                         , t.target)
-                                 for item in r if item[0] not in t.data)
-        for item in r:
-            if item[0] not in t.data:
-                t.data.appendleft(item[0])
-        return False, message_text or ''
+    return t.get_message(r
+                         , lambda o, i: 'Session {} ({}) on {} seems to be a zombie.'
+                         .format(t_link(f'{o.target}/S/{str(i[0])}', str(i[0])), i[1], t.target), None, 0)
 
 
 @app.route('/<target>/check_job_status')
 @title('Check job status')
 @template('task')
+@message_type('outstanding')
 @period('6h')
 def check_job_status(t):
     r = execute(t.target
@@ -633,27 +506,13 @@ def check_job_status(t):
                 , {}
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
-        else:
-            for item in t.data.copy():
-                if item not in [r_item[0] for r_item in r]:
-                    t.data.remove(item)
-        message_text = '\n'.join(f'Job {item[0]} ({item[1]}) on {t.target} is broken, {item[2]} failures.'
-                                 for item in r if item[0] not in t.data)
-        for item in r:
-            if item[0] not in t.data:
-                t.data.appendleft(item[0])
-        return False, message_text or ''
+    return t.get_message(r, lambda o, i: f'Job {i[0]} ({i[1]}) on {o.target} is broken, {i[2]} failures.', None, 0)
 
 
 @app.route('/<target>/check_src_structure')
 @title('Check src structure')
 @template('task')
+@message_type('outstanding')
 @parameters({'destination_schema': ' = str'
              , 'source_target': ' = str'
              , 'source_schema': ' = str'})
@@ -663,7 +522,7 @@ def check_job_status(t):
 def check_src_structure(t):
     """This task compares destination and source column types for all existing tables in specified schema."""
     if t.parameters['source_target'] not in app.config['USERS'][t.user_name][2]:
-        return True, f"Source target {t.parameters['source_target']} not exists or not allowed."
+        return t.abort(f"Source target {t.parameters['source_target']} not exists or not allowed.")
     target_columns = execute(t.target
                              , "select c.table_name, c.column_name, c.data_type, c.data_length from all_tab_columns c"
                                " join all_tables t on t.owner = c.owner and t.table_name = c.table_name"
@@ -688,42 +547,25 @@ def check_src_structure(t):
                           , 'many'
                           , False)
 
-    comparison_results = []
+    comparison_result = []
     for target_column in target_columns:
         for src_column in src_columns:
             if target_column[0] == src_column[0] and target_column[1] == src_column[1]:
                 if target_column[2] != src_column[2] or target_column[3] != src_column[3]:
-                    comparison_results.append(f'{target_column[0]}.{target_column[1]}'
-                                              f'\n  {target_column[2]}({target_column[3]})'
-                                              f' → {src_column[2]}({src_column[3]})')
+                    comparison_result.append(f'{target_column[0]}.{target_column[1]}'
+                                             f'\n  {target_column[2]}({target_column[3]})'
+                                             f' → {src_column[2]}({src_column[3]})')
                 break
-    if not comparison_results:
-        t.data = None
-        return False, ''
-    if t.data is None:
-        t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
-    else:
-        for item in t.data.copy():
-            if item not in comparison_results:
-                t.data.remove(item)
-    new_items = [item for item in comparison_results if item not in t.data]
-    if not new_items:
-        return False, ''
-    max_count = 20
-    message_text = '\n'.join([item for item in new_items[:max_count - 1]])
-    message_text = f"Some source tables for {t.target}.{t.parameters['destination_schema']}" \
-                   f" has been changed:\n{message_text}"
-    if len(new_items) > max_count:
-        message_text += f'\n and {str(len(new_items) - max_count)} more...'
-    for item in comparison_results:
-        if item not in t.data:
-            t.data.appendleft(item)
-    return False, message_text
+    return t.get_message(comparison_result
+                         , lambda o, i: i[0]
+                         , lambda o: f"Some source tables"
+                                     f" for {o.target}.{o.parameters['destination_schema']} has been changed", 0)
 
 
 @app.route('/<target>/check_session_stats')
 @title('Check session')
 @template('task')
+@message_type('outstanding')
 @parameters({'statistic_name': ' = str'
              , 'value': ' >= int'})
 @period('30m')
@@ -735,27 +577,27 @@ def check_session_stats(t):
                 , {**t.parameters}
                 , 'many'
                 , False)
-    if not r:
-        t.data = None
-        return False, ''
-    else:
-        if t.data is None:
-            t.data = deque(maxlen=app.config['MAX_STORED_OBJECTS'])
-        else:
-            for item in t.data.copy():
-                if item not in [r_item[0] for r_item in r]:
-                    t.data.remove(item)
-        max_count = 10
-        new_items = [item for item in r if item[0] not in t.data]
-        message_text = '\n'.join('Session {} on {} has {} = {:,}.'
-                                 .format(t_link(f'{t.target}/S/{str(item[0])}', str(item[0]))
-                                         , t.target
-                                         , item[1]
-                                         , item[2]).replace(',', ' ')
-                                 for item in new_items[:max_count - 1])
-        if len(new_items) > max_count:
-            message_text += f'\n and {str(len(new_items) - max_count)} more...'
-        for item in r:
-            if item[0] not in t.data:
-                t.data.appendleft(item[0])
-        return False, message_text or ''
+    return t.get_message(r
+                         , lambda o, i: 'Session {} on {} has {} = {:,}.'
+                         .format(t_link(f'{o.target}/S/{str(i[0])}', str(i[0])), o.target, i[1], i[2]).replace(',', ' ')
+                         , None, 0)
+
+
+@app.route('/<target>/check_concurrency')
+@title('Check concurrency')
+@template('task')
+@message_type('threshold')
+@parameters({'concurrency_pct': ' >= int'})
+@period('1h')
+def check_concurrency(t):
+    """Each occurrence increases the threshold to 2x."""
+    r = execute(t.target
+                , "select nvl(round((sum(concurrency_wait_time) / nullif(sum(elapsed_time), 0)) * 100), 0) ct"
+                  " from v$sql_monitor where status = 'EXECUTING'"
+                  " and sid in (select sid from v$session where status = 'ACTIVE')"
+                , {}
+                , 'one'
+                , False)
+    return t.get_message(r
+                         , lambda o, i: f'{o.target} has average concurrency rate = {i}%.'
+                         , None, t.parameters['concurrency_pct'], 1.5)

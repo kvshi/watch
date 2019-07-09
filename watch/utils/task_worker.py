@@ -56,9 +56,11 @@ class Worker(threading.Thread):
                             continue
                     task.state = 'run'
                 try:
-                    finished, message = app.view_functions[task.endpoint](task)
+                    message = app.view_functions[task.endpoint](task)
                     r = 0
                     if message:
+                        if task.text:
+                            message = f'{t_italic(task.text)}\n{message}'
                         notification_pool.appendleft((datetime.now()
                                                       , task.uuid
                                                       , task.name
@@ -72,7 +74,7 @@ class Worker(threading.Thread):
                                                     , task.chat_id
                                                     , task.reply_to_message_id
                                                     , message))
-                    if finished:
+                    if task.finished:
                         del task_pool[task.uuid]
                     else:
                         task.last_call = datetime.now()
@@ -84,7 +86,7 @@ class Worker(threading.Thread):
                             m = unsent_pool.popleft()
                             r = prepare_and_send(m[3]
                                                  , m[4]
-                                                 , f'{t_italic("This message was postponed due to network problem:")}'
+                                                 , f'{t_italic("This message was postponed due to network problem")}'
                                                    f'\n{m[5]}')
                             if r == 0 and task_pool.get(m[1], None):
                                 task_pool[m[1]].state = 'wait'

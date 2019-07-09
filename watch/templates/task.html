@@ -32,6 +32,9 @@
             {% endfor %}
         </select>
     </label>
+    <label>Text
+        <input type="text" class="sql-text" name="text" size="20" value="{% if request.args.get('text') %}{{ request.args['text'] }}{% endif %}">
+    </label>
     <input type="hidden" name="do">
     <input type="submit" value="Add">
     {% if g.snail %}<span class="form-caption" title="This task could be very slow, other task will be waiting...">&#128012</span>{% endif %}

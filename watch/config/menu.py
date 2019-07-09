@@ -73,7 +73,8 @@ menu_tree = {'get_user': ['user', []]
                                        , 'wait_for_zombie'
                                        , 'check_job_status'
                                        , 'check_src_structure'
-                                       , 'check_session_stats']]
+                                       , 'check_session_stats'
+                                       , 'check_concurrency']]
              , 'get_ext': ['target', []]
              , 'get_app': ['user'
                            , ['get_notifications'

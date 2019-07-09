@@ -58,7 +58,7 @@ ENABLE_ACCESS_LOG = False
 # 0 value means that the worker will not be started. So you can turn it off if you are not going to create tasks.
 WORKER_FREQ_SEC = 10  # set to 0 to turn it off
 
-# Limit the maximum number of notifications, received from all the tasks.
+# Limit the maximum number of notifications to show in "Tasks notifications" view.
 MAX_KEPT_NOTIFICATIONS = 100
 
 # All active tasks can be stored to disk before the server shutdown.
@@ -69,6 +69,9 @@ STORE_FILE = path.join(path.dirname(__file__), 'stored_tasks')
 # This option limits the maximum number of database objects which the task marks as sent.
 # When the limit will be exceeded the oldest object removing (FIFO), even if it's warning is actual.
 MAX_STORED_OBJECTS = 1000
+
+# If the task message is a list, this parameter limits it's length.
+MAX_MESSAGE_ITEMS = 10
 
 # Your telegram bot name and token.
 # These params must be set to use messaging (sending notifications and receiving commands)

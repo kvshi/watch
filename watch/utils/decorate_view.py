@@ -94,3 +94,10 @@ def optional(optional_parameters):
         f.optional = optional_parameters
         return f
     return decorator
+
+
+def message_type(task_message_type):
+    def decorator(f):
+        f.message_type = task_message_type
+        return f
+    return decorator
