@@ -552,9 +552,9 @@ def check_src_structure(t):
         for src_column in src_columns:
             if target_column[0] == src_column[0] and target_column[1] == src_column[1]:
                 if target_column[2] != src_column[2] or target_column[3] != src_column[3]:
-                    comparison_result.append(f'{target_column[0]}.{target_column[1]}'
-                                             f'\n  {target_column[2]}({target_column[3]})'
-                                             f' → {src_column[2]}({src_column[3]})')
+                    comparison_result.append((f'{target_column[0]}.{target_column[1]}'
+                                              f'\n  {target_column[2]}({target_column[3]})'
+                                              f' → {src_column[2]}({src_column[3]})',))
                 break
     return t.get_message(comparison_result
                          , lambda o, i: i[0]

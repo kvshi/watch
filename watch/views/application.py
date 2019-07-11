@@ -7,7 +7,6 @@ from cx_Oracle import clientversion, DatabaseError, OperationalError
 from platform import platform
 from time import sleep
 from os import path
-from urllib.request import ProxyHandler, build_opener, install_opener
 
 
 @app.route('/login', methods=['GET', 'POST'])
