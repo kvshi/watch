@@ -34,12 +34,14 @@ Of course, it is actual if your company don't want to buy Oracle Enterprise Mana
 * Pygal
 
 ### Installation
-First thing you should know: cx_Oracle needs Oracle Instant Client. Installing it could be a bit painful, please read [cx_Oracle guide](https://cx-oracle.readthedocs.io/en/latest/installation.html).
+First thing you should know: cx_Oracle needs Oracle Instant Client. Installing it could be a bit painful, please read [cx_Oracle guide](https://cx-oracle.readthedocs.io/en/latest/installation.html) and [Oracle Client Guide](https://oracle.github.io/odpi/doc/installation.html). On Windows Oracle Client requires [redistributable libraries](https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html).
 
 Then create a new virtual environment if you don't want to mess your python instance.
 
 Install Watch:
 `pip install git+https://github.com/alx-sdv/watch.git`
+
+If you deploy the app on Linux, please, add sqlnet.ora file to /usr/lib/oracle/XX.X/client64/lib with parameter "DISABLE_OOB=ON". Otherwise you will not be able to cancel heavy queries. For other platforms this problem also can be actual, it depends on Oracle Client version.
 
 ### Settings
 Open `/config/config.py` and follow instructions inside.
@@ -113,7 +115,7 @@ Uncommitted transactions | Notify when somebody has an inactive session containi
 Wait for queued | Notify if some query has been queued too long.
 Wait for recycled | Notify to take out the trash.
 Check segment size | Notify when segment (table, index, ...) size has reached specified threshold. 
-Check resource usage | Notify when some of server resource usage reached specified threshold
+Check resource usage | Notify when some of server resource usage reached specified threshold.
 Wait for SQL error | Notify if some query has failed. It is based on sql monitor, but a trigger on servererror is much better.
 Ping target | Notify if ping to the target has failed.
 Check redo switches | Notify if redo logs switch too often.
@@ -122,7 +124,7 @@ Wait for zombie | Notify if some sessions do nothing but still are active.
 Check job status | Notify if Oracle Job became broken.
 Check src structure | Notify if some source column has been changed.
 Check session | To monitor session stat params.
-Check concurrency | To monitor average concurrency time
+Check concurrency | To monitor average concurrency time.
 
 All functions were tested on Oracle 11.2 & 12.1 (single instance mode).
 
@@ -201,26 +203,18 @@ Feel free to submit a pull request to improve or extend an existing functionalit
 * `usage` Ability to download report result or send it by e-mail.
 * `usage` Easy copying to clipboard.
 * `usage` User-specific report settings, recent views history.
-* `general` Review all sql code.
-* `usage` More detailed error messages from parser.
-* `usage` Param parser should supports braces and IN operator.
+* `usage` More detailed error messages returning from parser.
+* `usage` Braces and IN operator support for parser.
 * `usage` New value directive t(trunc). -t10d for date fields.
-* `usage` Display elapsed time for heavy reports.
 * `usage` Ability to cancel heavy view directly from it's form. Not only from administration page.
-* `general` Logging more user activity, add user name to log message.
-* `general` Make a logo.
-* `usage` Restrict registering duplicating tasks.
 * `usage` Sign up via Telegram.
-* `usage` Improve chat commands, use buttons, instant views and other fantastic features.
+* `usage` Improve chat commands, use buttons.
 * `report` Monitor for specified part of active sql text.
 * `report` Which queries has been executed too often.
-* `task` Improve "Wait for status" task, consider backdating inserts.
 * `usage` Generate script for all necessary grants.
-* `report` Add measures, filters, date frame to "Top activity".
 * `usage` Add an optional numeric argument to @auto() which will refresh a report each N minutes automatically.
 * `report` Go deeper to [ASH](https://www.slideshare.net/jberesni/ash-architecture-and-advanced-usage-rmoug2014-36611678).
 * `security` Encrypt app data.
-* `security` Add CSRF protection.
 * `usage` Ability to set hyperlinks via decorators. Add useful links to existing views.
 * `report` Make a forecast for disk space usage.
 * `report` Find unused indexes, partitions, tables.

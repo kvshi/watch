@@ -4,11 +4,11 @@
 <form method="get">
     {% for k, v in g.parameters.items() %}
     <label>{% if loop.index == 1 %}Required{% endif %}
-        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}" required>
+        <input type="text" class="sql-text" name="{{ k }}" maxlength="512" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}" required>
     </label>
     {% endfor %}
     <label >Filter
-        <input type="text" class="sql-text" name="filter"
+        <input type="text" class="sql-text" name="filter" maxlength="512"
                value="{%- if 'filter' in request.args -%}
                           {{ request.args['filter'] }}
                       {%- else -%}
@@ -16,7 +16,7 @@
                       {%- endif -%}" size="70" autofocus>
     </label>
     <label>Sort
-        <input type="text" class="sql-text" name="sort"
+        <input type="text" class="sql-text" name="sort" maxlength="512"
                value="{% if 'sort' in request.args %}{{ request.args['sort'] }}{% else %}{{ g.default_sort }}{% endif %}" size="30">
     </label>
     <input type="hidden" name="do">
@@ -38,7 +38,7 @@
 {% if data is defined %}
 {% block table %}
 {% if data %}
-{% if statement %}<div id="sql" class="table-hint" style="display: none;">{{ statement }}</div>{% endif %}
+{% if statement %}<div id="sql" class="table-hint" style="display: none; width: 70%;">{{ statement }}</div>{% endif %}
 <div class="table-hint">Fetched {{ data|length }} rows</div>
     <table>
         <tr><th>{% if statement %}<a onclick="e = document.getElementById('sql'); e.style.display = (e.style.display == 'none') ? 'block' : 'none';">&#9776;</a>{% endif %}</th>

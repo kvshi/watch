@@ -45,7 +45,7 @@ def get_target_objects(target):
          , "status": 'str'
          , "username": 'str'
          , "module": 'str'
-         , "client_info": 'str'
+         # , "client_info": 'str'
          , "sql_exec_start": 'datetime'
          , "last_refresh_time": 'datetime'
          , "round(elapsed_time / 1000000) elapsed_secs": 'int'

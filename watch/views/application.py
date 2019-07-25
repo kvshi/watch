@@ -202,7 +202,7 @@ def get_ext(target):
 @app.route('/<target>/search')
 @title('Search')
 def search(target):
-    text = request.args['text']
+    text = request.args['text'].replace(' ', '')
     if len(text) <= 4 and text.isdigit():
         return redirect(url_for('get_session', target=target, sid=text))
     else:

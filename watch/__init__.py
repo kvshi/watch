@@ -53,6 +53,34 @@ for view in columns:
     columns[view] = {kf: vf for kf, vf in zip([kfs.strip().split(' ')[-1].split('.')[-1]
                                                for kfs in columns[view].keys()]
                                               , columns[view].values())}
+view_attr = {}
+for k, f in app.view_functions.items():
+    view_attr[k] = {}
+    view_attr[k]['view_doc'] = f.__doc__
+    view_attr[k]['default_filters'] = getattr(f, 'default_filters', ())
+    view_attr[k]['default_sort'] = getattr(f, 'default_sort', '')
+    view_attr[k]['columns'] = list(columns[k].keys()) if k in columns.keys() else []
+    view_attr[k]['types'] = list(columns[k].values()) if k in columns.keys() else []
+    view_attr[k]['content'] = getattr(f, 'content', '')
+    view_attr[k]['parameters'] = getattr(f, 'parameters', {})
+    view_attr[k]['optional'] = getattr(f, 'optional', {})
+    view_attr[k]['pct_columns'] = tuple(i for i, v in enumerate(view_attr[k]['columns']) if v.startswith('pct_'))
+    view_attr[k]['snail'] = getattr(f, 'snail', False)
+    view_attr[k]['sql_id'] = view_attr[k]['columns'].index('sql_id') if 'sql_id' in view_attr[k]['columns'] else -1
+    view_attr[k]['sid'] = view_attr[k]['columns'].index('sid') if 'sid' in view_attr[k]['columns'] else -1
+    if view_attr[k]['sid'] == -1:
+        view_attr[k]['sid'] = view_attr[k]['columns'].index('session_id') \
+            if 'session_id' in view_attr[k]['columns'] else -1
+    view_attr[k]['object_name'] = view_attr[k]['columns'].index('object_name') \
+        if 'object_name' in view_attr[k]['columns'] else -1
+    view_attr[k]['object_type'] = view_attr[k]['columns'].index('object_type') \
+        if 'object_type' in view_attr[k]['columns'] else -1
+    view_attr[k]['owner'] = view_attr[k]['columns'].index('owner') if 'owner' in view_attr[k]['columns'] else -1
+    view_attr[k]['task_name'] = view_attr[k]['columns'].index('task_name') \
+        if 'task_name' in view_attr[k]['columns'] else -1
+    view_attr[k]['period'] = getattr(f, 'period', '')
+    view_attr[k]['template'] = getattr(f, 'template', '')
+
 
 from watch.utils.hook_request import validate_request, set_template_context, render_form
 app.before_request(validate_request)

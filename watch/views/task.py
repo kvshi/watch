@@ -342,7 +342,7 @@ def wait_for_queued(t):
 @period('1d')
 def wait_for_recycled(t):
     r = execute(t.target
-                , "select round(sum(r.space * p.value) / 1024 / 1024 / 1024) space_gb"
+                , "select nvl(round(sum(r.space * p.value) / 1024 / 1024 / 1024), 0) space_gb"
                   " from dba_recyclebin r join v$parameter p on p.name = 'db_block_size'"
                   " where r.can_purge = 'YES' and nvl(r.space, 0) <> 0"
                 , {}
@@ -413,7 +413,8 @@ def wait_for_sql_error(t):
                   " from v$sql_monitor"
                   " where status = 'DONE (ERROR)'"
                   " and error_number not in (1013, 28, 604, 24381)"  # cancel, kill, recursive, DML array
-                  " and last_refresh_time between :start_date and :end_date and username not like :user_name"
+                  " and last_refresh_time between :start_date and :end_date"
+                  " and (username not like :user_name or username is null)"
                 , {'start_date': t.data['start_date']
                    , 'end_date': end_date
                    , 'user_name': t.optional.get('ignore_user', '---')}
@@ -453,7 +454,7 @@ def check_redo_switches(t):
                     , 'switches_per_interval': t.parameters['switches_per_interval']}
                 , 'one'
                 , False)
-    return f'Redo logs on {t.target} have been switched {str(r[0])} times per last {t.period}.' if r else None
+    return f'Redo logs on {t.target} have been switched {str(r[0])} times in the last {t.period}.' if r else None
 
 
 @app.route('/<target>/check_logs_deletion')
@@ -514,17 +515,18 @@ def check_job_status(t):
 @template('task')
 @message_type('outstanding')
 @parameters({'destination_schema': ' = str'
-             , 'source_target': ' = str'
+             , 'source_db': ' = str'
              , 'source_schema': ' = str'})
 @optional({'by_target_prefix': ' = str'
            , 'by_target_postfix': ' = str'})
 @period('3h')
 def check_src_structure(t):
     """This task compares destination and source column types for all existing tables in specified schema."""
-    if t.parameters['source_target'] not in app.config['USERS'][t.user_name][2]:
-        return t.abort(f"Source target {t.parameters['source_target']} not exists or not allowed.")
+    if t.parameters['source_db'] not in app.config['USERS'][t.user_name][2]:
+        return t.abort(f"Source target {t.parameters['source_db']} not exists or not allowed.")
     target_columns = execute(t.target
-                             , "select c.table_name, c.column_name, c.data_type, c.data_length from all_tab_columns c"
+                             , "select c.table_name || '.' || c.column_name, c.data_type, c.data_length"
+                               " from all_tab_columns c"
                                " join all_tables t on t.owner = c.owner and t.table_name = c.table_name"
                                " where c.owner = :destination_schema"
                                " and c.table_name like :by_target_prefix and c.table_name like :by_target_postfix"
@@ -535,9 +537,9 @@ def check_src_structure(t):
                                 }
                              , 'many'
                              , False)
-    src_columns = execute(t.parameters['source_target']
-                          , "select :prefix || c.table_name || :postfix,"
-                            " c.column_name, c.data_type, c.data_length from all_tab_columns c"
+    src_columns = execute(t.parameters['source_db']
+                          , "select :prefix || c.table_name || :postfix || '.' || c.column_name,"
+                            " c.data_type, c.data_length from all_tab_columns c"
                             " join all_tables t on t.owner = c.owner and t.table_name = c.table_name"
                             " where c.owner = :source_schema order by 1, 2"
                           , {'source_schema': t.parameters['source_schema']
@@ -548,14 +550,15 @@ def check_src_structure(t):
                           , False)
 
     comparison_result = []
+    src_columns = {item[0]: (item[1], item[2]) for item in src_columns}
+
     for target_column in target_columns:
-        for src_column in src_columns:
-            if target_column[0] == src_column[0] and target_column[1] == src_column[1]:
-                if target_column[2] != src_column[2] or target_column[3] != src_column[3]:
-                    comparison_result.append((f'{target_column[0]}.{target_column[1]}'
-                                              f'\n  {target_column[2]}({target_column[3]})'
-                                              f' → {src_column[2]}({src_column[3]})',))
-                break
+        c = src_columns.get(target_column[0])
+        if not c:
+            continue
+        if target_column[1] != c[0] or target_column[2] != c[1]:
+            comparison_result.append((f'{target_column[0]}'
+                                      f'\n  {target_column[1]}({target_column[2]}) → {c[0]}({c[1]})',))
     return t.get_message(comparison_result
                          , lambda o, i: i[0]
                          , lambda o: f"Some source tables"

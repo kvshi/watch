@@ -2,7 +2,7 @@
 {% block parameters %}
 <form method="get">
     <label>Date column
-        <select type="text" class="sql-text" name="column_name" size="1" autofocus>
+        <select type="text" class="sql-text" name="column_name" size="1" maxlength="512" autofocus>
             <option disabled>Set column for grouping</option>
             {% for item in date_columns %}
             <option value="{{ item[0] }}"{% if request.args.get('column_name', '') == item[0] %} selected{% endif %}>{{ item[0] }}</option>
@@ -10,7 +10,7 @@
         </select>
     </label>
     <label>Date from
-        <input type="text" class="sql-text" name="date_from" size="30" value="{{ request.args.get('date_from', '-5d') }}">
+        <input type="text" class="sql-text" name="date_from" size="30" maxlength="512" value="{{ request.args.get('date_from', '-5d') }}">
     </label>
     <input type="hidden" name="do">
     <input type="submit" value="Run">

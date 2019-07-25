@@ -3,14 +3,14 @@
 <form method="get">
     {% for k, v in g.parameters.items() %}
     <label>{% if loop.index == 1 %}Required{% endif %}
-        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}" required>
+        <input type="text" class="sql-text" name="{{ k }}" maxlength="512" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}" required>
     </label>
     {% endfor %}
     {% if g.parameters and g.optional %}<br>{% endif %}
     {% if g.optional %}
     {% for k, v in g.optional.items() %}
     <label>{% if loop.index == 1 %}Optional{% endif %}
-        <input type="text" class="sql-text" name="{{ k }}" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
+        <input type="text" class="sql-text" name="{{ k }}" maxlength="512" placeholder="{{ k + v }}" title="{{ k + v }}" size="{{ (k|length + v|length, 14)|max }}" value="{{ request.args.get(k, '') }}">
     </label>
     {% endfor %}
     <br>
@@ -33,7 +33,7 @@
         </select>
     </label>
     <label>Text
-        <input type="text" class="sql-text" name="text" size="20" value="{% if request.args.get('text') %}{{ request.args['text'] }}{% endif %}">
+        <input type="text" class="sql-text" name="text" size="20" maxlength="512" value="{% if request.args.get('text') %}{{ request.args['text'] }}{% endif %}">
     </label>
     <input type="hidden" name="do">
     <input type="submit" value="Add">

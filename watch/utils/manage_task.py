@@ -30,26 +30,6 @@ class Task:
         self.finished = finished or False
         self.text = text
 
-    def to_list(self):
-        return [self.uuid
-                , self.endpoint
-                , self.name
-                , self.create_date
-                , self.user_name
-                , self.target
-                , self.last_call
-                , self.execs
-                , self.state
-                , self.parameters
-                , self.period
-                , self.chat_id
-                , self.reply_to_message_id
-                , self.data
-                , self.optional
-                , self.priority
-                , self.finished
-                , self.text]
-
     def __str__(self):
         return pformat(self.__dict__, width=160).replace('\'', '')
 
@@ -59,14 +39,14 @@ class Task:
 
     def abort(self, message):
         self.finished = True
-        return message
+        return '❎ ' + message
 
     def get_message(self, result, message_item, header=None, n=None, k=None):
-        message_type = getattr(app.view_functions[self.endpoint], 'message_type', '')
+        message_type = getattr(app.view_functions[self.endpoint], 'message_type', '')  # list, outstanding, threshold
         if not message_type:
             return
         if message_type == 'threshold':
-            if not self.data or result[0] < n:
+            if not self.data or (result[0] or 0) < n :
                 self.data = n
             if result[0] >= self.data:
                 self.data = round(result[0] * k)
@@ -122,7 +102,7 @@ def store_tasks(task_pool):
     with lock:
         if app.config['STORE_FILE']:
             with open(app.config['STORE_FILE'], 'wb') as f:
-                pickle({k: v.to_list() for k, v in task_pool.items()}, f, HIGHEST_PROTOCOL)
+                pickle({k: [*v.__dict__.values()] for k, v in task_pool.items()}, f, HIGHEST_PROTOCOL)
                 return True
         else:
             return False

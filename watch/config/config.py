@@ -106,6 +106,9 @@ BOT_CHAT_LIST = {}
 # Don't send anything, ignore notifying options for tasks. Turn WORKER_FREQ_SEC to 0 to stop task processing.
 MUTE_MESSAGES = False
 
+# Do not perform task till reset if previous message was not sent.
+FAIL_TASK_ON_MSG_ERROR = True
+
 # Do not disturb hours. The task worker will skip all tasks at this time. Examples: [22, 7] or [0, 8]
 DND_HOURS = []
 

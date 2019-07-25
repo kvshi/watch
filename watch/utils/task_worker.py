@@ -79,7 +79,7 @@ class Worker(threading.Thread):
                     else:
                         task.last_call = datetime.now()
                         task.execs += 1
-                        task.state = 'wait' if r == 0 else 'msg error'
+                        task.state = 'wait' if r == 0 or not app.config['FAIL_TASK_ON_MSG_ERROR'] else 'msg error'
                     # retry sending even if prev msg had no recipient
                     if r == 0 and message and not app.config['MUTE_MESSAGES']:
                         while r == 0 and len(unsent_pool) > 0:

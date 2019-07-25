@@ -2,28 +2,28 @@
 {% block content %}
 <form method="get">
     <label>Start date
-        <input type="text" class="sql-text" name="start_date" size="14" placeholder='= datetime' value="{{ request.args.get('start_date', '-1h') }}">
+        <input type="text" class="sql-text" name="start_date" size="14" maxlength="512" placeholder='= datetime' value="{{ request.args.get('start_date', '-1h') }}">
     </label>
     <label>End date
-        <input type="text" class="sql-text" name="end_date" size="14" placeholder='= datetime' value="{{ request.args.get('end_date', '-0h') }}">
+        <input type="text" class="sql-text" name="end_date" size="14" maxlength="512" placeholder='= datetime' value="{{ request.args.get('end_date', '-0h') }}">
     </label>
     <label>Wait class
-        <input type="text" class="sql-text" name="wait_class" size="14" placeholder='like str' value="{{ request.args.get('wait_class', '') }}">
+        <input type="text" class="sql-text" name="wait_class" size="14" maxlength="512" placeholder='like str' value="{{ request.args.get('wait_class', '') }}">
     </label>
     <label>Event
-        <input type="text" class="sql-text" name="event" size="14" placeholder='like str' value="{{ request.args.get('event', '') }}">
+        <input type="text" class="sql-text" name="event" size="14" maxlength="512" placeholder='like str' value="{{ request.args.get('event', '') }}">
     </label>
     <label>Session id
-        <input type="text" class="sql-text" name="session_id" size="14" placeholder='= int' value="{{ request.args.get('session_id', '') }}">
+        <input type="text" class="sql-text" name="session_id" size="14" maxlength="512" placeholder='= int' value="{{ request.args.get('session_id', '') }}">
     </label>
     <label>User name
-        <input type="text" class="sql-text" name="user_name" size="14" placeholder='like str' value="{{ request.args.get('user_name', '') }}">
+        <input type="text" class="sql-text" name="user_name" size="14" maxlength="512" placeholder='like str' value="{{ request.args.get('user_name', '') }}">
     </label>
     <label>SQL id
-        <input type="text" class="sql-text" name="sql_id" size="14" placeholder='= str' value="{{ request.args.get('sql_id', '') }}">
+        <input type="text" class="sql-text" name="sql_id" size="14" maxlength="512" placeholder='= str' value="{{ request.args.get('sql_id', '') }}">
     </label>
     <label>Object name
-        <input type="text" class="sql-text" name="object_name" size="14" placeholder='like str' value="{{ request.args.get('object_name', '') }}">
+        <input type="text" class="sql-text" name="object_name" size="14" maxlength="512" placeholder='like str' value="{{ request.args.get('object_name', '') }}">
     </label>
     <input type="hidden" name="do">
     <input type="submit" value="Run">

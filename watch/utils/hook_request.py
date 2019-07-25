@@ -1,5 +1,5 @@
 from flask import session, g, request, redirect, url_for, abort, flash, render_template
-from watch import title, columns, worker, task_pool
+from watch import title, view_attr, worker, task_pool
 from watch.utils.parse_args import *
 from watch.utils.manage_task import Task
 from time import time
@@ -30,28 +30,10 @@ def validate_request():
 
 def set_template_context():
     g.request_time = time()
-    f = app.view_functions[request.endpoint]
     g.title = title
-    g.view_doc = f.__doc__
-    g.default_filters = getattr(f, 'default_filters', ())
-    g.default_sort = getattr(f, 'default_sort', '')
-    g.columns = list(columns[request.endpoint].keys()) if request.endpoint in columns.keys() else []
-    g.types = list(columns[request.endpoint].values()) if request.endpoint in columns.keys() else []
-    g.content = getattr(f, 'content', '')
-    g.parameters = getattr(f, 'parameters', {})
-    g.optional = getattr(f, 'optional', {})
-    g.pct_columns = tuple(i for i, v in enumerate(g.columns) if v.startswith('pct_'))
-    g.snail = getattr(f, 'snail', False)
-    g.sql_id = g.columns.index('sql_id') if 'sql_id' in g.columns else -1
-    g.sid = g.columns.index('sid') if 'sid' in g.columns else -1
-    if g.sid == -1:
-        g.sid = g.columns.index('session_id') if 'session_id' in g.columns else -1
-    g.object_name = g.columns.index('object_name') if 'object_name' in g.columns else -1
-    g.object_type = g.columns.index('object_type') if 'object_type' in g.columns else -1
-    g.owner = g.columns.index('owner') if 'owner' in g.columns else -1
-    g.task_name = g.columns.index('task_name') if 'task_name' in g.columns else -1
-    g.period = getattr(f, 'period', '')
-    if getattr(f, 'template', '') == 'task':
+    for k, v in view_attr[request.endpoint].items():
+        setattr(g, k, v)
+    if g.template == 'task':
         g.notification_list = {0: 'Nobody'}
         r = app.config['USERS'][session['user_name']][1]
         if r:
