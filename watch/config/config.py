@@ -27,6 +27,7 @@ SECRET_KEY = ''.join([choice(ascii_letters + digits + punctuation) for n in rang
 HOST = '127.0.0.1'  # [REQUIRED]
 PORT = 5000
 SERVER_NAME = None
+CUSTOM_SERVER_NAME = None
 
 # How much time client browser should keep our cookies.
 PERMANENT_USER_SESSION = True
@@ -179,7 +180,7 @@ except ImportError:
     pass
 
 # Finishing touch
-CHART_CONFIG['config'] = Config(js=[f'http://{SERVER_NAME if SERVER_NAME else HOST + ":" + str(PORT)}'
+CHART_CONFIG['config'] = Config(js=[f'http://{SERVER_NAME or CUSTOM_SERVER_NAME or (HOST + ":" + str(PORT))}'
                                     f'/static/pygal-tooltips.min.js'])
 
 # That's all. Now try to start the app. Good luck!

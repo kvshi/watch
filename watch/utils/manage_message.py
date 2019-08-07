@@ -35,7 +35,8 @@ def t_esc(s):
 
 
 def t_link(url_part, text):
-    return f'<a href="http://{app.config["SERVER_NAME"]}/{t_esc(url_part)}">{t_esc(text)}</a>'
+    return f'<a href="http://{app.config["SERVER_NAME"] or app.config["CUSTOM_SERVER_NAME"]}' \
+           f'/{t_esc(url_part)}">{t_esc(text)}</a>'
 
 
 def t_pre(text):
