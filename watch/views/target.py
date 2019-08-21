@@ -165,6 +165,7 @@ def get_users(target):
 @default_filters("owner not like 'SYS%' and stale_stats = 'YES'", "object_type = 'TABLE'")
 @default_sort("last_analyzed")
 def get_table_stats(target):
+    """Pct wasted is a very approximate parameter, based on average row length."""
     return render_page()
 
 

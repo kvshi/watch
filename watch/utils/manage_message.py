@@ -1,24 +1,21 @@
 from watch import app
 from urllib.request import urlopen
 from urllib.parse import urlencode
+from urllib.error import URLError
 from json import loads
 from html import escape
 
 
 def send_message(parameters):
+    url = '{}{}{}/{}?{}'.format(app.config['BOT_SIMPLE_PROXY'], app.config['BOT_PATH'], app.config['BOT_TOKEN']
+                                , 'sendMessage', urlencode(parameters))
     try:
-        with urlopen('{}{}{}/{}?{}'.format(app.config['BOT_SIMPLE_PROXY']
-                                         , app.config['BOT_PATH']
-                                         , app.config['BOT_TOKEN']
-                                         , 'sendMessage'
-                                         , urlencode(parameters))) as r:
-            message = loads(r.read().decode('utf-8'))
-            if not message.get('ok', False):
-                app.logger.error(message.get('description', 'Unknown bot error (sendMessage)'))
-                return -1
-        return 0
-    except Exception as e:
+        with urlopen(url) as r:
+            return 0 if loads(r.read().decode('utf-8')).get('ok', False) else -1
+    except URLError as e:
         app.logger.error(f'messaging error: {e}')
+        app.logger.error(f'client request: {url}')
+        app.logger.error(f"server response: {e.read().decode('utf-8')}")
         return -1
 
 

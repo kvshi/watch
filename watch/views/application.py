@@ -82,7 +82,7 @@ def cancel_sql():
 
 @app.route('/task/<action>')
 @title('Manage task')
-def manage_task(action):
+def manage_task(action):  # TODO: divide to 3 views
     if action == 'browse':
         if not task_pool.get(request.args['id']):
             abort(404)
@@ -90,6 +90,8 @@ def manage_task(action):
     with lock:
         if action == 'reset_all':
             reset_task(task_pool)
+        elif not task_pool.get(request.args['id']):
+            abort(404)
         elif task_pool[request.args['id']].state == 'run':
             flash(f'Can\'t {action} an active task.')
         elif action == 'cancel':
