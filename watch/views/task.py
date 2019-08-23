@@ -2,7 +2,7 @@ from flask import render_template, session
 from watch import app, task_pool, lock
 from watch.utils.decorate_view import *
 from watch.utils.oracle import execute, get_tab_columns, ping
-from watch.utils.parse_args import dlm_str_to_list, upper_values, get_offset
+from watch.utils.parse_args import dlm_str_to_list, upper_values, get_offset, get_num_str
 from datetime import datetime
 from watch.utils.manage_message import t_link
 
@@ -17,7 +17,7 @@ def get_task(target):
 
 
 @app.route('/<target>/wait_for_execution')
-@title('Wait for SQL execution')
+@title('SQL execution')
 @template('task')
 @parameters({'sql_id': ' = str'})
 @period('1m')
@@ -54,7 +54,7 @@ def wait_for_execution(t):
 
 
 @app.route('/<target>/wait_for_status')
-@title('Wait for status')
+@title('Watch status')
 @template('task')
 @message_type('list')
 @parameters({"owner": ' = str'
@@ -145,7 +145,7 @@ def wait_for_status(t):
 
 
 @app.route('/<target>/wait_for_heavy')
-@title('Wait for heavy')
+@title('Heavy SQL')
 @template('task')
 @message_type('outstanding')
 @parameters({'exec_time_min': ' >= int'
@@ -179,7 +179,7 @@ def wait_for_heavy(t):
 
 
 @app.route('/<target>/wait_for_temp')
-@title('Critical temp usage')
+@title('Temp usage')
 @template('task')
 @message_type('outstanding')
 @parameters({'pct_used': ' >= int'})
@@ -240,7 +240,7 @@ def wait_for_uncommitted(t):
 
 
 @app.route('/<target>/wait_for_ts')
-@title('Critical tabspace usage')
+@title('Tabspace usage')
 @template('task')
 @message_type('outstanding')
 @parameters({'pct_used': ' >= int'})
@@ -277,7 +277,7 @@ def wait_for_ts(t):
 
 
 @app.route('/<target>/wait_for_session')
-@title('Wait for session')
+@title('Session activity')
 @template('task')
 @parameters({'sid': ' = int'})
 @period('1m')
@@ -306,7 +306,7 @@ def wait_for_session(t):
 
 
 @app.route('/<target>/wait_for_queued')
-@title('Wait for queued')
+@title('Queued SQL')
 @template('task')
 @message_type('outstanding')
 @parameters({'queued_time_sec': ' >= int'})
@@ -335,7 +335,7 @@ def wait_for_queued(t):
 
 
 @app.route('/<target>/wait_recycled')
-@title('Wait for recycled')
+@title('Recycled space')
 @template('task')
 @message_type('threshold')
 @parameters({'space_gb': ' >= int'})
@@ -354,7 +354,7 @@ def wait_for_recycled(t):
 
 
 @app.route('/<target>/check_size')
-@title('Check segment size')
+@title('Segment size')
 @template('task')
 @message_type('threshold')
 @parameters({'owner': ' = str'
@@ -378,7 +378,7 @@ def check_size(t):
 
 
 @app.route('/<target>/check_resource_usage')
-@title('Check res usage')
+@title('Resource usage')
 @template('task')
 @parameters({'pct_used': ' 0..100% >= int'})
 @period('1h')
@@ -397,7 +397,7 @@ def check_resource_usage(t):
 
 
 @app.route('/<target>/wait_for_sql_error')
-@title('Wait for SQL error')
+@title('SQL error')
 @template('task')
 @message_type('list')
 @optional({'ignore_user': ' like str'})
@@ -439,7 +439,7 @@ def ping_target(t):
 
 
 @app.route('/<target>/check_redo_switches')
-@title('Check redo switches')
+@title('Redo switches')
 @template('task')
 @parameters({'switches_per_interval': ' >= int'})
 @period('1h')
@@ -458,7 +458,7 @@ def check_redo_switches(t):
 
 
 @app.route('/<target>/check_logs_deletion')
-@title('Check logs deletion')
+@title('Logs moving')
 @template('task')
 @message_type('threshold')
 @parameters({'size_gb': ' >= int'})
@@ -476,7 +476,7 @@ def check_logs_deletion(t):
 
 
 @app.route('/<target>/wait_for_zombie')
-@title('Wait for zombie')
+@title('Zombie sessions')
 @template('task')
 @message_type('outstanding')
 @parameters({'last_call_minutes': ' >= int'})
@@ -497,7 +497,7 @@ def wait_for_zombie(t):
 
 
 @app.route('/<target>/check_job_status')
-@title('Check job status')
+@title('Job health')
 @template('task')
 @message_type('outstanding')
 @period('6h')
@@ -511,7 +511,7 @@ def check_job_status(t):
 
 
 @app.route('/<target>/check_src_structure')
-@title('Check src structure')
+@title('Compare structure')
 @template('task')
 @message_type('outstanding')
 @parameters({'destination_schema': ' = str'
@@ -566,7 +566,7 @@ def check_src_structure(t):
 
 
 @app.route('/<target>/check_session_stats')
-@title('Check session')
+@title('Session stats')
 @template('task')
 @message_type('outstanding')
 @parameters({'statistic_name': ' = str'
@@ -581,13 +581,13 @@ def check_session_stats(t):
                 , 'many'
                 , False)
     return t.get_message(r
-                         , lambda o, i: 'Session {} on {} has {} = {:,}.'
-                         .format(t_link(f'{o.target}/S/{str(i[0])}', str(i[0])), o.target, i[1], i[2]).replace(',', ' ')
+                         , lambda o, i: 'Session {} on {} has {} = {}.'
+                         .format(t_link(f'{o.target}/S/{str(i[0])}', str(i[0])), o.target, i[1], get_num_str(i[2]))
                          , None, 0)
 
 
 @app.route('/<target>/check_concurrency')
-@title('Check concurrency')
+@title('SQL concurrency')
 @template('task')
 @message_type('threshold')
 @parameters({'concurrency_pct': ' >= int'})
@@ -604,3 +604,25 @@ def check_concurrency(t):
     return t.get_message(r
                          , lambda o, i: f'{o.target} has average concurrency rate = {i}%.'
                          , None, t.parameters['concurrency_pct'], 1.5)
+
+
+@app.route('/<target>/check_frequent_sql')
+@title('Frequent SQL')
+@template('task')
+@message_type('outstanding')
+@parameters({'executions': ' >= int'})
+@period('24h')
+def check_frequent_sql(t):
+    """This task based on v$sqlarea which accumulate statistics since SQL statement had been cached."""
+    r = execute(t.target
+                , "select sql_id, parsing_schema_name, executions,"
+                  " to_char(to_date(first_load_time, 'yyyy-mm-dd/hh24:mi:ss'), 'dd.mm hh24:mi')"
+                  " from v$sqlarea where parsing_schema_name not like '%SYS%'"
+                  " and executions > :executions order by executions desc"
+                , {**t.parameters}
+                , 'many'
+                , False)
+    return t.get_message(r
+                         , lambda o, i: '{} ({}) executed {} times since {}.'
+                           .format(t_link(f'{o.target}/Q/{i[0]}', i[0]), i[1], get_num_str(i[2]), i[3])
+                         , lambda o: f'Frequent executions on {o.target}' , 0)

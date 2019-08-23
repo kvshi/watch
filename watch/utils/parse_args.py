@@ -246,3 +246,7 @@ def dlm_str_to_list(s):
 
 def upper_values(d):
     return {k: v.strip().upper() if isinstance(v, str) else v for k, v in d.items()}
+
+
+def get_num_str(n):
+    return "{:,}".format(n).replace(',', ' ')

@@ -104,29 +104,30 @@ And some tasks:
 
 Task | Description
 ---- | -----------
-Wait for execution | Notify when specified query will be finished.
-Wait for session | Notify when specified session will be inactive (for example, when the client has got first portion of rows). 
-Wait for status | Notify when specified table will contain specified row.
-Wait for heavy | Notify if some query executes too long or consumes too much temp space.
+SQL execution | Notify when specified query will be finished.
+Queued SQL | Notify if some query has been queued too long.
+SQL concurrency | To monitor average concurrency time.
+Heavy SQL | Notify if some query executes too long or consumes too much temp space.
+Frequent SQL | Notify if some SQL statement executes too often.
+SQL error | Notify if some query has failed. It is based on sql monitor, but a trigger on servererror is much better.
+Session activity | Notify when specified session will be inactive (for example, when the client has got first portion of rows). 
+Session stats | To monitor session stat params.
+Uncommitted transactions | Notify when somebody has an inactive session containing locks.
+Zombie sessions | Notify if some sessions do nothing but still are active.
 Temp usage | Notify when free temp space ends up.
 Tabspace usage | Notify when some tablespace becomes full.
+Recycled space | Notify to take out the trash.
+Segment size | Notify when segment (table, index, ...) size has reached specified threshold. 
+Watch status | Notify when specified table will contain specified row.
+Resource usage | Notify when some of server resource usage reached specified threshold.
+Redo switches | Notify if redo logs switch too often.
+Logs moving | Notify if too many archived redo logs wait for deletion.
+Job health | Notify if Oracle Job became broken.
 Expired users | Notify if some user account expires.
-Uncommitted transactions | Notify when somebody has an inactive session containing locks.
-Wait for queued | Notify if some query has been queued too long.
-Wait for recycled | Notify to take out the trash.
-Check segment size | Notify when segment (table, index, ...) size has reached specified threshold. 
-Check resource usage | Notify when some of server resource usage reached specified threshold.
-Wait for SQL error | Notify if some query has failed. It is based on sql monitor, but a trigger on servererror is much better.
+Compare structure | Notify if some source column has been changed.
 Ping target | Notify if ping to the target has failed.
-Check redo switches | Notify if redo logs switch too often.
-Check logs deletion | Notify if too many archived redo logs wait for deletion.
-Wait for zombie | Notify if some sessions do nothing but still are active.
-Check job status | Notify if Oracle Job became broken.
-Check src structure | Notify if some source column has been changed.
-Check session | To monitor session stat params.
-Check concurrency | To monitor average concurrency time.
 
-All functions were tested on Oracle 11.2 & 12.1 (single instance mode).
+All views and tasks were tested on Oracle 11.2 & 12.1 (single instance mode).
 
 ### Making your own view
 There is two ways to add your code to the app:
