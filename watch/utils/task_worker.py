@@ -11,7 +11,8 @@ from datetime import datetime
 def prepare_and_send(chat_id, reply_to_message_id, message):
     message_parameters = {'chat_id': chat_id
                           , 'text': message
-                          , 'parse_mode': 'HTML'}
+                          , 'parse_mode': 'HTML'
+                          , 'disable_web_page_preview': 'true'}
     if reply_to_message_id:
         message_parameters['reply_to_message_id'] = reply_to_message_id
     return send_message(message_parameters)

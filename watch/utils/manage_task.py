@@ -31,7 +31,7 @@ class Task:
         self.text = text
 
     def __str__(self):
-        return pformat(self.__dict__, width=160).replace('\'', '')
+        return pformat(self.__dict__, width=160).replace('\'', '').replace(',\n', '\n')
 
     def finish(self, message):
         self.finished = True

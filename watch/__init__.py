@@ -13,6 +13,7 @@ app.config.from_pyfile(path.join(path.dirname(__file__), 'config', 'config.py'))
 app.jinja_env.lstrip_blocks = True
 app.jinja_env.trim_blocks = True
 
+# Global objects
 startup_time = datetime.now()
 lock = RLock()
 target_pool = {}
@@ -22,6 +23,7 @@ task_pool = restore_tasks()
 notification_pool = deque(maxlen=app.config['MAX_KEPT_NOTIFICATIONS'])
 unsent_pool = deque(maxlen=app.config['MAX_KEPT_NOTIFICATIONS'])
 
+#Background threads
 from watch.utils.task_worker import Worker
 worker = Worker()
 
@@ -34,7 +36,7 @@ def get_page_stats():
     return {'get_page_stats': f'{datetime.now().strftime("%H:%M:%S")}'
                               f', {(time() - g.get("request_time", time())):.3f} secs'}
 
-
+# Import view modules
 import watch.views.error
 import watch.views.application
 import watch.views.task
@@ -47,6 +49,7 @@ import watch.views.table
 import watch.views.view
 from watch.ext import *
 
+# Prepare views' metadata
 title = {k: getattr(f, 'title', '') for k, f in app.view_functions.items()}
 columns = {k: f.columns for k, f in app.view_functions.items() if hasattr(f, 'columns')}
 for view in columns:

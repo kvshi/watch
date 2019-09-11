@@ -25,32 +25,23 @@ def get_task(target):
 def wait_for_execution(t):
     """Note that a query started manually from IDE will stay "executing" until you fetch all it's rows.""" \
        """ In such case "Wait for session" can be helpful."""
-    if not t.data:
-        e = execute(t.target
-                    , "select max(sql_id) sql_id, max(sql_exec_id) exec_id, max(sql_exec_start) sql_exec_start"
-                      " from v$sql_monitor where sql_id = :sql_id"
-                    , t.parameters
-                    , 'one'
-                    , False)
-        if not e[0]:
-            return t.abort('Not found')
-        t.data = {'sql_id': e[0], 'exec_id': e[1], 'sql_exec_start': e[2]}
     r = execute(t.target
-                , "select sql_id, status"
-                  " from v$sql_monitor"
-                  " where sql_id = :sql_id and sql_exec_id = :exec_id and sql_exec_start = :sql_exec_start"
-                , t.data
+                , "select nvl(sum(case when status = 'EXECUTING' then 1 else 0 end), 0) e"
+                  ", nvl(sum(case when status like 'DONE%' then 1 else 0 end), 0) d"
+                  ", max(status) s"
+                  " from v$sql_monitor where sql_id = :sql_id"
+                , t.parameters
                 , 'one'
                 , False)
-    if not r:
-        return t.abort('Not found')
-    if r[1] == 'EXECUTING':
+    if r[0] + r[1] == 0:
+        return t.abort(f"SQL {t.parameters['sql_id']} Not found")
+    if r[0] > 0:
         return
     if t.reply_to_message_id:
-        return t.finish(r[1].lower())
-    return t.finish('{} on {} is {}.'.format(t_link(f'{t.target}/Q/{r[0]}', r[0])
+        return t.finish(r[2].lower())
+    return t.finish('{} on {} is {}.'.format(t_link(f"{t.target}/Q/{t.parameters['sql_id']}", t.parameters['sql_id'])
                                              , t.target
-                                             , r[1].lower()))
+                                             , r[2].lower()))
 
 
 @app.route('/<target>/wait_for_status')
