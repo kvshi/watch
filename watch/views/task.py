@@ -31,7 +31,7 @@ def wait_for_execution(t):
                     , t.parameters
                     , 'one'
                     , False)
-        if not r:
+        if not r[0]:
             return t.abort(f"SQL {t.parameters['sql_id']} Not found")
         else:
             t.data = r[0]
