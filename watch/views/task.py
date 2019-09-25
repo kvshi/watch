@@ -25,12 +25,23 @@ def get_task(target):
 def wait_for_execution(t):
     """Note that a query started manually from IDE will stay "executing" until you fetch all it's rows.""" \
        """ In such case "Wait for session" can be helpful."""
+    if not t.data:
+        r = execute(t.target, "select min(sql_exec_start) from v$sql_monitor"
+                              " where sql_id = :sql_id and status = 'EXECUTING'"
+                    , t.parameters
+                    , 'one'
+                    , False)
+        if not r:
+            return t.abort(f"SQL {t.parameters['sql_id']} Not found")
+        else:
+            t.data = r[0]
+            return
     r = execute(t.target
                 , "select nvl(sum(case when status = 'EXECUTING' then 1 else 0 end), 0) e"
                   ", nvl(sum(case when status like 'DONE%' then 1 else 0 end), 0) d"
                   ", max(status) s"
-                  " from v$sql_monitor where sql_id = :sql_id"
-                , t.parameters
+                  " from v$sql_monitor where sql_id = :sql_id and sql_exec_start >= :start_time"
+                , {'sql_id': t.parameters['sql_id'], 'start_time': t.data}
                 , 'one'
                 , False)
     if r[0] + r[1] == 0:
