@@ -15,7 +15,7 @@ def send_message(parameters):
     except URLError as e:
         app.logger.error(f'messaging error: {e}')
         app.logger.error(f'client request: {url}')
-        app.logger.error(f"server response: {e.read().decode('utf-8')}")
+        # app.logger.error(f"server response: {e.read().decode('utf-8')}")
         return -1
 
 
